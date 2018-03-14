@@ -1,0 +1,3 @@
+# The deployment ZIP file or test files
+*.zip
+*.gz
