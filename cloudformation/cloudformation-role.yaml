@@ -1,0 +1,39 @@
+Description: |
+    Role for CloudFormation to create stacks
+
+
+Resources:
+
+    CloudFormationSuperRole:
+        Type: AWS::IAM::Role
+        Properties:
+            Path: /
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                  - Effect: "Allow"
+                    Principal:
+                        Service: "cloudformation.amazonaws.com"
+                    Action: "sts:AssumeRole"
+            ManagedPolicyArns:
+              - "arn:aws:iam::aws:policy/ReadOnlyAccess"
+
+    CloudFormationUserRole:
+        Type: AWS::IAM::Role
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                  - Effect: "Allow"
+                    Principal:
+                        AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+                    Action: "sts:AssumeRole"
+            ManagedPolicyArns:
+              - "arn:aws:iam::aws:policy/AWSCloudFormationReadOnlyAccess"
+
+
+Outputs:
+
+    CloudFormationSuperRoleArn:
+        Description: The ARN for the CloudFormation super role
+        Value: !GetAtt CloudFormationSuperRole.Arn

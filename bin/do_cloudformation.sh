@@ -1,60 +1,52 @@
 #! /bin/bash
 
-# This is the generic script to rule them all. We fall back to some old school shell hackery
-# to use names of scripts to avoid passing in too many little silly parameters.
-
 set -e -u
 
-SCRIPT=`basename $0 .sh`
-
-if [[ "$SCRIPT" = "do_cloudformation" ]]; then
-    if [[ $# -lt 3 || "$1" = "-h" ]]; then
-        echo "Usage: `basename $0` 'verb' 'object' 'env' [...]"
-        exit 1
-    fi
-    DW_VERB="$1"
-    DW_OBJECT="$2"
-    shift 2
-else
-    # Action encoded in filename
-    DW_VERB="${SCRIPT%%_*}"
-    DW_OBJECT="${SCRIPT#*_}"
-fi
-DW_BASE_NAME="${DW_OBJECT//_/-}"
-
-if [[ $# -lt 1 || "$1" = "-h" ]]; then
+if [[ $# -lt 3 || "$1" = "-h" ]]; then
     cat <<EOF
-Usage: $0 ENV [Key=Value [Key=Value ...]]
+Usage:
+  `basename $0` 'verb' 'object' 'env' [Key=Value [Key=Value ...]]
 
-Run $DW_VERB on $DW_OBJECT stack named "${DW_BASE_NAME}-{ENV}".
-All parameters will be passed to AWS CLI after transformation to "ParameterKey=Key,ParameterValue=Value" syntax.
+The following verbs are supported: create, update, and delete
+
+We'll look for a description of the "object" in a template file.
+
+The "env" parameter should describe the environmen type, e.g. dev, prod, poc.
+
+All other parameters will be passed to AWS CLI after transformation to "ParameterKey=Key,ParameterValue=Value" syntax.
+Use 'UsePreviousValue' if you don't want to specify a new value.
 EOF
     exit 0
 fi
 
+CF_VERB="$1"
+CF_OBJECT="$2"
+ENV_NAME="$3"
+shift 3
+
+CF_BASE_NAME="${CF_OBJECT//_/-}"
+STACK_NAME="${CF_BASE_NAME}-${ENV_NAME}"
+
+echo "Trying to \"$CF_VERB\" a \"$CF_OBJECT\" within stack \"$STACK_NAME\"..."
+
 BINDIR=`dirname $0`
-TEMPLATE_FILE="$DW_OBJECT.yaml"
-if [[ ! -r "$TEMPLATE_FILE" ]]; then
-    TEMPLATE_FILE="$BINDIR/$DW_OBJECT.yaml"
-    if [[ ! -r "$TEMPLATE_FILE" ]]; then
-        echo "Cannot find '$DW_OBJECT.yaml' in current directory or '$BINDIR' -- you lost it?"
-        exit 1
+FOUND=no
+TEMPLATE_DIRS=". ./cloudformation $BINDIR"
+for TEMP_DIR in $TEMPLATE_DIRS; do
+    TEMPLATE_FILE="$TEMP_DIR/$CF_OBJECT.yaml"
+    if [[ -r "$TEMPLATE_FILE" ]]; then
+        FOUND=yes
+        break
     fi
+done
+
+if [[ "$FOUND" = "no" ]]; then
+    echo "Cannot find template '$CF_OBJECT.yaml' in: $TEMPLATE_DIRS -- you lost it?"
+    exit 1
 fi
 
-case "$TEMPLATE_FILE" in
-    /*)
-      TEMPLATE_URI="file://$TEMPLATE_FILE"
-      ;;
-    *)
-      TEMPLATE_URI="file://./$TEMPLATE_FILE"
-      ;;
-esac
-echo "Using CloudFormation file $TEMPLATE_URI"
-
-ENV_NAME="$1"
-STACK_NAME="${DW_BASE_NAME}-${ENV_NAME}"
-shift 1
+TEMPLATE_URI="file://$TEMPLATE_FILE"
+echo "Using CloudFormation template in \"$TEMPLATE_URI\"..."
 
 STACK_PARAMETERS=""
 for KV in "$@"; do
@@ -76,7 +68,7 @@ STACK_PARAMETERS="${STACK_PARAMETERS# }"
 # Because of the "set -e", a failed validation will stop this script:
 aws cloudformation validate-template --template-body "$TEMPLATE_URI" >/dev/null
 
-case "$DW_VERB" in
+case "$CF_VERB" in
 
   create)
 
@@ -109,8 +101,8 @@ case "$DW_VERB" in
         --stack-name "$STACK_NAME"
     ;;
 
-   *)
-    echo "Unexpected verb: $DW_VERB"
+  *)
+    echo "Unexpected verb: $CF_VERB"
     exit 1
     ;;
 

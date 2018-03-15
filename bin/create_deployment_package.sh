@@ -43,7 +43,7 @@ test -f "$ZIP_FILE" && \rm "$ZIP_FILE"
       -o -type f -print |
   zip -qr9 "$ZIP_FILE" -@
 )
-zip -qru "$ZIP_FILE" etl_log_processing/*.py
+zip -qru "$ZIP_FILE" log_processing/*.py
 
 set +x
 echo

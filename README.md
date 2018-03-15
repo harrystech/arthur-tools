@@ -12,7 +12,14 @@ and then they appeared to more generally useful. So here they are.
 
 ## Deploying CloudFormation templates
 
+The script `do\_cloudformation.sh` will help with deploying CloudFormation templates and then updating or tearing down the stacks.
 
+Examples for Arthur ETL:
+```
+AWS_PROFILE=cloudformation-development \
+  ../arthur-tools/bin/do_cloudformation.sh create dw-cluster dev \
+  VpcStackName=... MasterUsername=... MasterUserPassword=... NodeType=... NumberOfNodes=... QueryConcurrency=...
+```
 
 ## Deploying Lambdas
 
