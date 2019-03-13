@@ -11,12 +11,12 @@ import boto3
 import elasticsearch
 import requests_aws4auth
 
-from etl_log_processing import parse
+from log_processing import parse
 
 # Index for our log records
-LOG_INDEX_PATTERN = "dw-etl-logs-*"
+LOG_INDEX_PATTERN = "data-logs-*"
 LOG_INDEX_TEMPLATE = LOG_INDEX_PATTERN.replace("-*", "-template")
-LOG_DOC_TYPE = "arthur-redshift-etl-log"
+LOG_DOC_TYPE = "arthur-log"
 OLDEST_INDEX_IN_DAYS = 380
 
 ES_ENDPOINT_BY_ENV_TYPE = "/DW-ETL/ES-By-Env-Type/{env_type}"

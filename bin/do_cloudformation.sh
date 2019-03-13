@@ -4,6 +4,7 @@ set -e -u
 
 if [[ $# -lt 3 || "$1" = "-h" ]]; then
     cat <<EOF
+
 Usage:
   `basename $0` 'verb' 'object' 'env' [Key=Value [Key=Value ...]]
 
@@ -15,6 +16,7 @@ The "env" parameter should describe the environmen type, e.g. dev, prod, poc.
 
 All other parameters will be passed to AWS CLI after transformation to "ParameterKey=Key,ParameterValue=Value" syntax.
 Use 'UsePreviousValue' if you don't want to specify a new value.
+
 EOF
     exit 0
 fi

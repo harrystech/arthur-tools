@@ -17,7 +17,7 @@ import botocore.exceptions
 import elasticsearch
 import elasticsearch.helpers
 
-from etl_log_processing import compile, config, parse
+from log_processing import compile, config, parse
 
 
 def _build_actions_from(index, records):
@@ -29,20 +29,20 @@ def _build_actions_from(index, records):
             "_index": index,
             "_type": config.LOG_DOC_TYPE,
             "_id": record.id_,
-            "_source": record.data
+            "_source": record.data,
         }
 
 
-def _build_meta_doc(context, timestamp, message):
+def _build_meta_doc(context, event_data):
     doc = {
         "lambda_name": context.function_name,
         "lambda_version": context.function_version,
         "logfile": '/'.join((context.log_group_name, context.log_stream_name)),
-        "@timestamp": timestamp,
+        "log_level": "INFO",
+        "@timestamp": event_data['eventTime'],
         "context": {
             "remaining_time_in_millis": context.get_remaining_time_in_millis()
-        },
-        "message": message
+        }
     }
     return doc
 
@@ -106,8 +106,10 @@ def lambda_handler(event, context):
             print("Error code {} for object '{}'".format(error_code, file_uri))
             return
 
-        body = _build_meta_doc(context, event_data['eventTime'],
-                               "Index result for '{}': ok = {}, errors = {}".format(file_uri, ok, errors))
+        body = _build_meta_doc(context, event_data)
+        body["message"] = "Index result for '{}': ok = {}, errors = {}".format(file_uri, ok, errors)
+        body["original_logfile"] = file_uri
+
         sha1_hash = hashlib.sha1()
         sha1_hash.update(file_uri.encode())
         id_ = sha1_hash.hexdigest()

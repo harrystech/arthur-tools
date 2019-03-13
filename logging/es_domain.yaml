@@ -24,7 +24,6 @@ Parameters:
     InstanceType:
         Description: (optional) Elasticsearch node instance type for all nodes in the cluster
         Type: String
-        Default: m4.large.elasticsearch
         AllowedValues:
             - t2.small.elasticsearch
             - t2.medium.elasticsearch
@@ -168,7 +167,7 @@ Resources:
         Type: "AWS::Elasticsearch::Domain"
         Properties:
             DomainName: !Ref DomainName
-            ElasticsearchVersion: "6.2"
+            ElasticsearchVersion: "6.3"
             ElasticsearchClusterConfig:
                 DedicatedMasterEnabled: false
                 InstanceCount: !Ref NodeCount
