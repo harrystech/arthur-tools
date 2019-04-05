@@ -115,6 +115,10 @@ class LogRecord(collections.UserDict):
                 "properties": {
                     "remaining_time_in_millis": {"type": "long"}
                 }
+            },
+            "original_logfile": {
+                "type": "keyword",
+                "include_in_all": False
             }
         }
     }

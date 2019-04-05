@@ -16,7 +16,7 @@ from functools import partial
 import boto3
 
 # Note that relative imports don't work with Lambda
-from etl_log_processing import parse
+from log_processing import parse
 
 
 def load_records(sources):

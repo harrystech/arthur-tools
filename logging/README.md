@@ -29,12 +29,12 @@ See https://aws.amazon.com/blogs/security/how-to-control-access-to-your-amazon-e
 In order to run this code locally or to upload it as a lambda function, you have to have a
 virtual environment set up:
 ```shell
-./update_virtual_env.sh venv
+../bin/update_virtual_env.sh venv
 ```
 
 To deploy the lambda function, create a package
 ```shell
-./create_deployment_package.sh venv
+../bin/create_deployment_package.sh venv
 ```
 
 You need to upload the latest package to S3 in order to use it in the CloudFormation step:
@@ -62,6 +62,11 @@ If you need to update the stack, e.g. to update the Lambda handler, modify this 
 ```
 Remember that once you have set an optional parameter, you have to at least pass in that parameter
 with `=UserPreviousValue` or it reverts to its default.
+
+Finally, to delete the stack, run:
+```shell
+../bin/do_cloudformation.sh delete es_domain dev
+```
 
 ## Configuration
 
@@ -98,9 +103,12 @@ The template will be automatically set by the lambda handler with the first call
 
 ## Deleting older indices
 
+You can review the existing indices and automatically delete those older than about one
+year. (The delete command will stop to ask for confirmation.)
+
 ```shell
 config_log get_indices dev
-config_log delete_old_indices dev
+config_log delete_stale_indices dev
 ```
 
 ## Kibana
