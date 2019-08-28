@@ -13,6 +13,8 @@ import json
 import re
 import textwrap
 
+from log_processing import template
+
 
 class NoRecordsFoundError(Exception):
     pass
@@ -23,109 +25,9 @@ class LogRecord(collections.UserDict):
     Single "document" matching a log line.  Use .data for the dictionary, .id_ for a suitable _id.
     """
 
-    _INDEX_FIELDS = {
-        "properties": {
-            "application_name": {"type": "keyword"},
-            "environment": {"type": "keyword"},
-            "logfile": {
-                "type": "keyword",
-                "include_in_all": False
-                # or else you get too many double matches after pulling out the interesting values from the name
-            },
-            "data_pipeline": {
-                "properties": {
-                    "id": {"type": "keyword"},
-                    "component": {"type": "keyword"},
-                    "instance": {"type": "keyword"},
-                    "attempt": {"type": "keyword"}
-                }
-            },
-            "emr_cluster": {
-                "properties": {
-                    "id": {"type": "keyword"},
-                    "step_id": {"type": "keyword"}
-                }
-            },
-            "@timestamp": {"type": "date", "format": "strict_date_optional_time"},  # generic ISO datetime parser
-            "datetime": {
-                "properties": {
-                    "epoch_time_in_millis": {"type": "long"},
-                    "date": {"type": "date", "format": "strict_date"},  # used to select index during upload
-                    "year": {"type": "integer"},
-                    "month": {"type": "integer"},
-                    "day": {"type": "integer"},
-                    "day_of_week": {"type": "integer"},
-                    "hour": {"type": "integer"},
-                    "minute": {"type": "integer"},
-                    "second": {"type": "integer"}
-                },
-            },
-            "etl_id": {"type": "keyword"},
-            "log_level": {"type": "keyword"},
-            "logger": {
-                "type": "text",
-                "analyzer": "simple",
-                "fields": {
-                    "name": {
-                        "type": "keyword"
-                    }
-                }
-            },
-            "thread_name": {"type": "keyword"},
-            "source_code": {
-                "properties": {
-                    "filename": {"type": "string"},
-                    "line_number": {"type": "integer"},
-                }
-            },
-            "message": {
-                "type": "text",
-                "analyzer": "standard",
-                "fields": {
-                    "raw": {
-                        "type": "keyword"
-                    },
-                    "english": {
-                        "type": "text",
-                        "analyzer": "english"
-                    }
-                }
-            },
-            "monitor": {
-                "properties": {
-                    "monitor_id": {"type": "keyword"},
-                    "step": {"type": "keyword"},
-                    "event": {"type": "keyword"},
-                    "target": {"type": "keyword"},
-                    "elapsed": {"type": "float"},
-                    "error_codes": {"type": "text"}
-                }
-            },
-            "parser": {
-                "properties": {
-                    "start_pos": {"type": "long"},
-                    "end_pos": {"type": "long"},
-                    "chars": {"type": "long"}
-                },
-            },
-            # These last properties are only used by the Lambda handler:
-            "lambda_name": {"type": "keyword"},
-            "lambda_version": {"type": "keyword"},
-            "context": {
-                "properties": {
-                    "remaining_time_in_millis": {"type": "long"}
-                }
-            },
-            "original_logfile": {
-                "type": "keyword",
-                "include_in_all": False
-            }
-        }
-    }
-
     @staticmethod
     def index_fields():
-        return copy.deepcopy(LogRecord._INDEX_FIELDS)
+        return copy.deepcopy(template.LOG_RECORD_MAPPINGS)
 
     def __init__(self, d):
         super().__init__(d)
@@ -135,7 +37,7 @@ class LogRecord(collections.UserDict):
     def id_(self):
         sha1_hash = hashlib.sha1()
         key_values = (
-            "v1",
+            "v2",
             self["@timestamp"],
             self["etl_id"],
             self["log_level"],
@@ -201,7 +103,11 @@ class LogRecord(collections.UserDict):
 
     @message.setter
     def message(self, value):
-        self["message"] = value
+        # Elasticsearch has a max of 32766 for "immense" terms.
+        if len(value) >= 32766:
+            self["message"] = value[:32763] + '...'
+        else:
+            self["message"] = value
 
     @property
     def end_pos(self):
