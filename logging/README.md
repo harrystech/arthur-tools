@@ -1,7 +1,7 @@
 # Overview
 
 The goal of the log processing is to make the logs from Arthur ETLs (or other tools)
-available in Kibana (via an Elasticsearch Service) in order to have dashboards
+available in Kibana (after loading into an Elasticsearch Service) in order to have dashboards
 for KPIs and retrieve log lines (especially error messages) quickly.
 
 # Requirements
@@ -15,7 +15,7 @@ Here's the format for log lines that the parser expects:
 
 ## Amazon Elasticsearch Service Domains
 
-You have to have an Elasticsearch service running.
+You have to have an Elasticsearch service running (see below for starting one using CloudFormation).
 For more information about Elasticsearch in AWS, see their [Getting Started Guide].
 
 [Getting Started Guide]: http://docs.aws.amazon.com/elasticsearch-service/latest/developerguide/es-gsg.html
@@ -54,7 +54,7 @@ to bring up a ES domain along with a Lambda function to load log files.
 For example:
 ```shell
 ../bin/do_cloudformation.sh create dw_es_domain dev \
-    DomainName=dw-es-dev \
+    DomainName="dw-es-dev" \
     CodeS3Bucket="<your code bucket>" CodeS3Key="<your latest zip file>" \
     NodeStorageSize=20 \
     WhitelistCIDR1=192.168.1.1/32
@@ -81,10 +81,38 @@ Finally, to delete the stack, run:
 
 ### S3 lambda notification
 
-Since the bucket for log files is not part of the CloudFormation template, we have to manually add the trigger:
+Since the bucket for log files is not part of the CloudFormation template, we have to manually add the trigger.
+
+From the CloudFormation stack's outputs, copy the ARN of the Lambda function into this template,
+and save it as `notification.json`:
+
+```json
+{
+  "LambdaFunctionConfigurations": [
+    {
+      "LambdaFunctionArn": "<your function arn>",
+      "Events": [
+        "s3:ObjectCreated:*"
+      ],
+      "Filter": {
+        "Key": {
+          "FilterRules": [
+            {
+              "Name": "prefix",
+              "Value": "_logs/"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
+```
+
 ```shell
-aws s3api put-bucket-notification-configuration --bucket "<your bucket>" --notification-configuration \
-  '{"LambdaFunctionConfigurations":[{ "LambdaFunctionArn":"<your function arn>","Events":["s3:ObjectCreated:*"]}]}'
+aws s3api put-bucket-notification-configuration \
+    --bucket "<your bucket>" --notification-configuration \
+    --notification-configuration file://notification.json
 ```
 
 **Note** If you use S3 notifications on this bucket for something else, you must **add** them since the
@@ -128,7 +156,7 @@ Also, it's probably best to use UTC instead of the browser time, so change in **
 ```text
 dateFormat:tz    UTC
 dateFormat       YYYY/MM/DD HH:mm:ss.SSS
-defaultIndex     logs-*
+defaultIndex     dw-etl-logs-*
 ```
 
 No further changes should be necessary.

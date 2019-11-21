@@ -16,13 +16,16 @@ The script `do\_cloudformation.sh` will help with deploying CloudFormation templ
 the stacks.
 
 Examples for Arthur ETL:
-```
+```bash
 AWS_PROFILE=cloudformation-development \
   ../arthur-tools/bin/do_cloudformation.sh create dw-cluster dev \
   VpcStackName=... MasterUsername=... MasterUserPassword=... NodeType=... NumberOfNodes=... QueryConcurrency=...
 ```
 
 ## Deploying Lambdas
+
+This will be a combination of uploading a deployment package and then updating the stack to move
+the Lambda to the new version.  See examples in the `log_processing` directory.
 
 
 ## Centralized logging
