@@ -12,7 +12,7 @@ The following verbs are supported: create, update, and delete
 
 We'll look for a description of the "object" in a template file.
 
-The "env" parameter should describe the environmen type, e.g. dev, prod, poc.
+The "env" parameter should describe the environment type, e.g. dev, prod, poc.
 
 All other parameters will be passed to AWS CLI after transformation to "ParameterKey=Key,ParameterValue=Value" syntax.
 Use 'UsePreviousValue' if you don't want to specify a new value.

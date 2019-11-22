@@ -3,6 +3,8 @@ Description: |
 
 Parameters:
 
+    # Specifying the domain name limits what can be updated without requiring bringing up a new resource.
+    # But it simplifies the access policies.
     DomainName:
         Description: (required) A name for the Amazon ES domain
         Type: String
@@ -56,31 +58,39 @@ Parameters:
         Default: 2
         MinValue: 1
 
+    ElasticsearchVersion:
+        Description: (optional) Version of Elasticsearch
+        Type: String
+        AllowedValues:
+            - 6.8
+            - 6.7
+        Default: 6.8
+
     WhitelistCIDR1:
         Description: (recommended) First IP range in CIDR notation that can access ES and Kibana
         Type: String
-        Default: 0.0.0.0/0
         MinLength: 9
         MaxLength: 18
         AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+        Default: 0.0.0.0/0
         ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x
 
     WhitelistCIDR2:
         Description: (recommended) Second IP range in CIDR notation that can access ES and Kibana
         Type: String
-        Default: 0.0.0.0/0
         MinLength: 9
         MaxLength: 18
         AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+        Default: 0.0.0.0/0
         ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x
 
     WhitelistCIDR3:
         Description: (recommended) Third IP range in CIDR notation that can access ES and Kibana
         Type: String
-        Default: 0.0.0.0/0
         MinLength: 9
         MaxLength: 18
         AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+        Default: 0.0.0.0/0
         ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x
 
 
@@ -137,9 +147,9 @@ Resources:
             Role: !GetAtt LogParsingLambdaRole.Arn
             Tags:
                 - Key: Name
-                  Value: !Sub "${DomainName}-lambda"
+                  Value: !Sub "${AWS::StackName}-lambda"
                 - Key: user:sub-project
-                  Value: es-cluster
+                  Value: logging-es-cluster
 
     LogParsingLambdaInvocation:
         Type: "AWS::Lambda::Permission"
@@ -148,8 +158,9 @@ Resources:
             FunctionName: !Ref LogParsingLambdaFunction
             Principal: "s3.amazonaws.com"
             SourceAccount: !Ref "AWS::AccountId"
-            # FIXME Should be list of object store buckets
             SourceArn: !Sub "arn:aws:s3:::${CodeS3Bucket}"
+
+    # TODO: create alarm around errors in Lambda function
 
     # S3BucketNotification:
     #     Type: AWS::S3::Bucket
@@ -161,13 +172,11 @@ Resources:
     #                 - Function: !GetAtt LogParsingLambdaFunction.Arn
     #                   Event: "s3:ObjectCreated:*"
 
-    # TODO: Create parameter to store endpoint, create alarm around errors in Lambda function
-
     ElasticsearchDomain:
         Type: "AWS::Elasticsearch::Domain"
         Properties:
             DomainName: !Ref DomainName
-            ElasticsearchVersion: "6.3"
+            ElasticsearchVersion: !Ref ElasticsearchVersion
             ElasticsearchClusterConfig:
                 DedicatedMasterEnabled: false
                 InstanceCount: !Ref NodeCount
@@ -204,8 +213,40 @@ Resources:
                 rest.action.multi.allow_explicit_index: true
             Tags:
                 - Key: user:sub-project
-                  Value: es-cluster
+                  Value: logging-es-cluster
 
+    # The topic and role below allow to setup alerts from within Kibana (using ES opendistro).
+
+    KibanaAlertingTopic:
+         Type: AWS::SNS::Topic
+         Properties:
+             DisplayName: "Kibana Alerts may publish to this topic"
+             Tags:
+                 - Key: user:sub-project
+                   Value: logging-es-cluster
+
+    KibanaAlertingRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - Effect: "Allow"
+                      Principal:
+                          Service: "es.amazonaws.com"
+                      Action: "sts:AssumeRole"
+            Path: "/"
+            Policies:
+                - PolicyName: "publish_alert_to_sns"
+                  PolicyDocument:
+                      Version: "2012-10-17"
+                      Statement:
+                          - Effect: "Allow"
+                            Action: "s3:Publish"
+                            Resource: !Ref "KibanaAlertingTopic"
+            Tags:
+                - Key: user:sub-project
+                  Value: logging-es-cluster
 
 Outputs:
 
@@ -220,3 +261,11 @@ Outputs:
     LambdaCode:
         Description: Location of installed code
         Value: !Sub "s3://${CodeS3Bucket}/${CodeS3Key}"
+
+    KibanaAlertingTopic:
+        Description: SNS topic ARN for Alerting Destination
+        Value: !Ref KibanaAlertingTopic
+
+    KibanaAlertingRole:
+        Description: IAM role ARN for Alerting Destination
+        Value: !GetAtt KibanaAlertingRole.Arn

@@ -14,7 +14,7 @@ import requests_aws4auth
 from log_processing import parse
 
 # Index for our log records
-LOG_INDEX_PATTERN = "data-logs-*"
+LOG_INDEX_PATTERN = "dw-etl-logs-*"
 LOG_INDEX_TEMPLATE = LOG_INDEX_PATTERN.replace("-*", "-template")
 LOG_DOC_TYPE = "arthur-log"
 OLDEST_INDEX_IN_DAYS = 380

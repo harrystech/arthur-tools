@@ -1,0 +1,7 @@
+# Use this template to remember which parameters you need to supply or want to change.
+# (Or better yet: create a PR to switch to package/deploy scripts.)
+../bin/do_cloudformation.sh update dw_es_domain dev \
+    DomainName=UsePreviousValue \
+    CodeS3Bucket=UsePreviousValue CodeS3Key=UsePreviousValue \
+    NodeStorageSize=UsePreviousValue \
+    WhitelistCIDR1=UsePreviousValue

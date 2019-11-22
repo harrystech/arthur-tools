@@ -32,6 +32,8 @@ set -e -x
 ZIP_FILE="$PWD/log_processing_`date +%Y%m%d%H%M`.zip"
 test -f "$ZIP_FILE" && \rm "$ZIP_FILE"
 
+# Find all files that aren't part of packages already available in a Lambda environment
+# or that are cached / logistics.
 (
   cd $VIRTUAL_ENV/lib/python3.*/site-packages || exit 2
   find . -name '__pycache__' -prune \

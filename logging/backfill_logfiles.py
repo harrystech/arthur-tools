@@ -1,7 +1,9 @@
 #! /usr/bin/env python3
 
 """
-Load log files into Elasticsearch domain
+Load log files into Elasticsearch domain.
+
+This will only load files from stderr (which Arthur uses for its log output).
 """
 
 import json
@@ -22,7 +24,8 @@ def list_objects(bucket_name, prefix):
     response_iterator = paginator.paginate(Bucket=bucket_name, Prefix=prefix)
     for response in response_iterator:
         for info in response['Contents']:
-            yield info['Key']
+            if info['Key'].lower().endswith('stderr.gz'):
+                yield info['Key']
 
 
 def invoke_log_parser(function_name, bucket_name, object_key):
