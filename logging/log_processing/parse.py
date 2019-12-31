@@ -94,6 +94,8 @@ class LogRecord(collections.UserDict):
                                    if k in ["monitor_id", "step", "event", "target", "elapsed"]}
                 if "errors" in monitor_payload:
                     self["monitor"]["error_codes"] = " ".join(error["code"] for error in monitor_payload["errors"])
+                if "extra" in monitor_payload and "rowcount" in monitor_payload["extra"]:
+                    self["monitor"]["rowcount"] = monitor_payload["extra"]["rowcount"]
 
     # Properties to help with updating parser information
 

@@ -71,6 +71,7 @@ LOG_RECORD_MAPPINGS = {
                 "event": {"type": "keyword"},
                 "target": {"type": "keyword"},
                 "elapsed": {"type": "float"},
+                "rowcount": {"type": "long"},
                 "error_codes": {"type": "text"}
             }
         },
