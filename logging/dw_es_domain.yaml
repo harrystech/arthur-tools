@@ -165,19 +165,6 @@ Resources:
         UpdatePolicy:
             EnableVersionUpgrade: true
 
-    # Keep endpoint in parameter store for easy lookup.
-
-    # SsmParameter:
-    #     Type: AWS::SSM::Parameter
-    #     Properties:
-    #         Description: "Value of 'host:port' of Elasticsearch cluster for log processing"
-    #         Name: !Sub "/DW-ETL/ES-By-Env-Type/${EnvName}"
-    #         Tags:
-    #             - Key: user:sub-project
-    #               Value: logging-es-cluster
-    #         Type: "String"
-    #         Value: !Sub "${ElasticsearchDomain.DomainEndpoint}:443"
-
     # Topic and alerts about the ES cluster itself.
 
     ClusterAlertingTopic:
