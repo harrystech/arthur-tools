@@ -28,7 +28,7 @@ See also [How to control access].
 
 # Installation
 
-## Lambda
+## Lambda function
 
 In order to run this code locally or to upload it as a lambda function, you have to have a
 virtual environment set up:
@@ -141,7 +141,7 @@ The template will be automatically set by the lambda handler with the first call
 ## Deleting older indices
 
 You can review the existing indices and automatically delete those older than about one
-year. (The delete command will stop to ask for confirmation.)
+year. (The command will stop to ask for confirmation before actually deleting indices.)
 
 ```shell
 config_log get_indices dev
@@ -150,7 +150,7 @@ config_log delete_stale_indices dev
 
 ## Kibana
 
-In Kibana, add `dw-logs-\*` in **Management** -> **Index Patterns** and select `@timestamp` as the timestamp.
+In Kibana, add `dw-etl-logs-\*` in **Management** -> **Index Patterns** and select `@timestamp` as the timestamp.
 
 Also, it's probably best to use UTC instead of the browser time, so change in **Management** -> **Advanced Settings**:
 ```text
