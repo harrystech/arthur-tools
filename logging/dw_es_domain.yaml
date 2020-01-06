@@ -1,12 +1,18 @@
 Description: |-
     Create Amazon Elasticsearch Service domain for log processing
 
+AWSTemplateFormatVersion: '2010-09-09'
+
 Parameters:
 
     # Specifying the domain name limits what can be updated without requiring bringing up a new resource.
     # But it simplifies the access policies.
     DomainName:
         Description: (required) A name for the Amazon ES domain
+        Type: String
+
+    EnvName:
+        Description: (required) A name for the environment (like 'dev' or 'prod')
         Type: String
 
     CodeS3Bucket:
@@ -165,6 +171,16 @@ Resources:
         UpdatePolicy:
             EnableVersionUpgrade: true
 
+    # Keep endpoint in parameter store for easy lookup.
+
+    SsmParameter:
+        Type: AWS::SSM::Parameter
+        Properties:
+            Description: "Value of 'host:port' of Elasticsearch Service cluster for log processing"
+            Name: !Sub "/DW-ETL/ES-By-Env-Type/${EnvName}"
+            Type: "String"
+            Value: !Sub "${ElasticsearchDomain.DomainEndpoint}:443"
+
     # Topic and alerts about the ES cluster itself.
 
     ClusterAlertingTopic:
@@ -293,6 +309,10 @@ Outputs:
     ESEndpoint:
         Description: Endpoint for Elasticsearch clients
         Value: !Sub "${ElasticsearchDomain.DomainEndpoint}:443"
+
+    ParameterName:
+        Description: Name for lookup of endpoint
+        Value: !Sub "/DW-ETL/ES-By-Env-Type/${EnvName}"
 
     KibanaAlertingTopic:
         Description: SNS topic ARN for Alerting Destination
