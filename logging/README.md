@@ -111,7 +111,7 @@ and save it as `notification.json`:
 
 ```shell
 aws s3api put-bucket-notification-configuration \
-    --bucket "<your bucket>" --notification-configuration \
+    --bucket "<your bucket>" \
     --notification-configuration file://notification.json
 ```
 
