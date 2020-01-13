@@ -28,9 +28,7 @@ Parameters:
         Type: String
         AllowedValues:
             - 7.1
-            - 6.8
-            - 6.7
-        Default: 6.8
+        Default: 7.1
 
     InstanceType:
         Description: (optional) Elasticsearch node instance type for all nodes in the cluster

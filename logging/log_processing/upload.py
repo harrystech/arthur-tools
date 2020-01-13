@@ -27,7 +27,6 @@ def _build_actions_from(index, records):
         yield {
             "_op_type": "index",
             "_index": index,
-            "_type": config.LOG_DOC_TYPE,
             "_id": record.id_,
             "_source": record.data,
         }
@@ -51,7 +50,7 @@ def index_records(es, records_generator):
     n_ok, n_errors = 0, 0
     for date, records in itertools.groupby(records_generator, key=lambda rec: rec["datetime"]["date"]):
         index = config.log_index(date)
-        print("Indexing records ({})".format(index))
+        print("Indexing records into '{}'".format(index))
         ok, errors = elasticsearch.helpers.bulk(es, _build_actions_from(index, records))
         n_ok += ok
         if errors:
@@ -99,7 +98,7 @@ def lambda_handler(event, context):
             processed = compile.load_remote_records(file_uri)
             ok, errors = index_records(es, processed)
         except parse.NoRecordsFoundError:
-            print("Failed to find records in '{}'".format(file_uri))
+            print("Failed to find records in object '{}'".format(file_uri))
             return
         except botocore.exceptions.ClientError as exc:
             error_code = exc.response['Error']['Code']
@@ -113,7 +112,7 @@ def lambda_handler(event, context):
         sha1_hash = hashlib.sha1()
         sha1_hash.update(file_uri.encode())
         id_ = sha1_hash.hexdigest()
-        res = es.index(index=config.log_index(), doc_type=config.LOG_DOC_TYPE, id=id_, body=body)
+        res = es.index(index=config.log_index(), doc_type="_doc", id=id_, body=body)
         print("Sent meta information, result: {}, index: {}".format(res['result'], res['_index']))
         print("Time remaining (ms):", context.get_remaining_time_in_millis())
 
