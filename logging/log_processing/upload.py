@@ -112,7 +112,7 @@ def lambda_handler(event, context):
         sha1_hash = hashlib.sha1()
         sha1_hash.update(file_uri.encode())
         id_ = sha1_hash.hexdigest()
-        res = es.index(index=config.log_index(), doc_type="_doc", id=id_, body=body)
+        res = es.index(index=config.log_index(), body=body, id=id_)
         print("Sent meta information, result: {}, index: {}".format(res['result'], res['_index']))
         print("Time remaining (ms):", context.get_remaining_time_in_millis())
 
