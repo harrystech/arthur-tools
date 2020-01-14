@@ -150,13 +150,13 @@ config_log delete_stale_indices dev
 
 ## Kibana
 
-In Kibana, add `dw-etl-logs-\*` in **Management** -> **Index Patterns** and select `@timestamp` as the timestamp.
+In Kibana, add `dw-etl-arthur-logs-\*` in **Management** -> **Index Patterns** and select `@timestamp` as the timestamp.
 
 Also, it's probably best to use UTC instead of the browser time, so change in **Management** -> **Advanced Settings**:
 ```text
 dateFormat:tz    UTC
 dateFormat       YYYY/MM/DD HH:mm:ss.SSS
-defaultIndex     dw-etl-logs-*
+defaultIndex     dw-etl-arthur-logs-*
 ```
 
 No further changes should be necessary.
