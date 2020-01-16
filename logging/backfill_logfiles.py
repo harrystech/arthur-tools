@@ -24,7 +24,8 @@ def list_objects(bucket_name, prefix):
     response_iterator = paginator.paginate(Bucket=bucket_name, Prefix=prefix)
     for response in response_iterator:
         for info in response['Contents']:
-            if info['Key'].lower().endswith('stderr.gz'):
+            # Arthur always logs to the error channel.
+            if info['Key'].endswith(('StdError.gz', 'stderr.gz')):
                 yield info['Key']
 
 

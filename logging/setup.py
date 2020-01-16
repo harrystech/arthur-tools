@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="log_processing",
-    version="1.3.0",
+    version="1.4.0",
     author="Harry's Data Engineering and Contributors",
     license="MIT",
     url="https://github.com/harrystech/arthur-tools",

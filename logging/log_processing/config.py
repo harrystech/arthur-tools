@@ -15,8 +15,7 @@ from log_processing import parse
 
 # Index for our log records
 LOG_INDEX_PATTERN = "dw-etl-arthur-logs-*"
-LOG_INDEX_TEMPLATE = LOG_INDEX_PATTERN.replace("-*", "-template")
-LOG_DOC_TYPE = "arthur-log"
+LOG_INDEX_TEMPLATE_NAME = LOG_INDEX_PATTERN.replace("-*", "-template")
 OLDEST_INDEX_IN_DAYS = 380
 
 ES_ENDPOINT_BY_ENV_TYPE = "/DW-ETL/ES-By-Env-Type/{env_type}"
@@ -24,7 +23,7 @@ ES_ENDPOINT_BY_BUCKET = "/DW-ETL/ES-By-Bucket/{bucket_name}"
 
 
 def log_index(date=None):
-    # Smallest supported granularity is a day
+    """Return name of index for current date (or specified date) with granularity of a day."""
     if date is None:
         instant = datetime.date.today()
     elif isinstance(date, datetime.date):
@@ -35,10 +34,11 @@ def log_index(date=None):
 
 
 def set_es_endpoint(env_type, bucket_name, endpoint):
-    print("Setting endpoint")
+    """Set SSM parameters so that lambdas can find the appropriate Elasticsearch cluster."""
     client = boto3.client('ssm')
     for parameter in (ES_ENDPOINT_BY_ENV_TYPE, ES_ENDPOINT_BY_BUCKET):
         name = parameter.format(env_type=env_type, bucket_name=bucket_name)
+        print("Setting parameter '{}'".format(name))
         client.put_parameter(
             Name=name,
             Description="Value of 'host:port' of Elasticsearch cluster for log processing",
@@ -59,6 +59,7 @@ def set_es_endpoint(env_type, bucket_name, endpoint):
 
 
 def get_es_endpoint(env_type=None, bucket_name=None):
+    """Get value of SSM parameters based either on the environment or the bucket (which has presumably log files)."""
     if env_type is not None:
         name = ES_ENDPOINT_BY_ENV_TYPE.format(env_type=env_type)
     elif bucket_name is not None:
@@ -108,7 +109,7 @@ def connect_to_es(host, port, use_auth=False):
 
 
 def exists_index_template(client):
-    return client.indices.exists_template(LOG_INDEX_TEMPLATE)
+    return client.indices.exists_template(LOG_INDEX_TEMPLATE_NAME)
 
 
 def put_index_template(client):
@@ -117,16 +118,15 @@ def put_index_template(client):
         "template": LOG_INDEX_PATTERN,
         "version": version,
         "settings": {
-            "index.mapper.dynamic": False,
             "number_of_shards": 2,
             "number_of_replicas": 1
         },
         "mappings": {
-            LOG_DOC_TYPE: parse.LogRecord.index_fields()
+            "properties": parse.LogRecord.index_properties()
         }
     }
-    print("Updating index template '{}' (doc_type={}, version={})".format(LOG_INDEX_TEMPLATE, LOG_DOC_TYPE, version))
-    client.indices.put_template(LOG_INDEX_TEMPLATE, body)
+    print("Updating index template '{}' (version={})".format(LOG_INDEX_TEMPLATE_NAME, version))
+    client.indices.put_template(LOG_INDEX_TEMPLATE_NAME, body)
 
 
 def get_current_indices(client):

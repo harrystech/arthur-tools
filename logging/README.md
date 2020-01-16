@@ -43,7 +43,7 @@ To deploy the lambda function, create a package
 
 You need to upload the latest package to S3 in order to use it in the CloudFormation step:
 ```shell
-aws s3 cp log_processing_*.zip s3://<your code bucket>/_lambda/
+aws s3 sync --exclude '*' --include 'log_processing_*.zip' ./ s3://YOUR_CODE_BUCKET/_lambda/
 ```
 
 ## CloudFormation
@@ -182,8 +182,8 @@ Examples:
 ```shell
 # built-in examples
 search_log ERROR examples
-# local files
-search_log FD1B9A50D12C41C3 ../arthur.log*
+# local files (after you copied some logs from your Arthur run directory)
+search_log 'Starting to' ./arthur.log*
 # remote files
 search_log 'finished successfully' s3://example-bucket/logs/example/StdError.gzip
 ```
@@ -197,8 +197,8 @@ Example:
 ```shell
 # built-in examples
 upload_log dev examples
-# local files
-upload_log dev ../arthur.log
+# local files (after you copied some logs from your Arthur run directory)
+upload_log dev ./arthur.log
 # remote files
 upload_log dev s3://example/logs/df-pipeline-id/component/instance/attempt/StdError.gzip
 ```
@@ -211,4 +211,4 @@ then you can run the following script to invoke the lambda function:
 ```shell
 ./backfill_logfiles.py "<bucket_name>" "<prefix>" "<function_name>"
 ```
-Where `<function_name>` may simply be copied from the _Outputs_ of the stack.
+Where `<function_name>` may simply be copied from the _Outputs_ section of the CloudFormation stack information.

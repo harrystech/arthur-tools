@@ -26,8 +26,8 @@ class LogRecord(collections.UserDict):
     """
 
     @staticmethod
-    def index_fields():
-        return copy.deepcopy(template.LOG_RECORD_MAPPINGS)
+    def index_properties():
+        return copy.deepcopy(template.LOG_RECORD_PROPERTIES)
 
     def __init__(self, d):
         super().__init__(d)
@@ -124,7 +124,7 @@ class LogRecord(collections.UserDict):
 class LogParser:
 
     # Basic Regex to split up Arthur log lines
-    _LOG_LINE_REGEX = """
+    _LOG_LINE_REGEX = r"""
         # Look for timestamp from beginning of line, e.g. 2017-06-09 06:16:19,350 (where msecs are optional)
         ^(?P<_timestamp>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}(?:,(?P<_milliseconds>\d{3}))?)\s
         # Look for ETL id, e.g. CD58E5D3C73E4D45
@@ -197,8 +197,8 @@ class LogParser:
                     environment = '/'.join(parts[2:-5])
                     data_pipeline = parts[-5:-1]
             elif len(parts) > 11 and parts[-9] == "logs" and parts[-3] == "steps":
-                    environment = '/'.join(parts[1:-9])
-                    data_pipeline = parts[-8:-3]
+                environment = '/'.join(parts[1:-9])
+                data_pipeline = parts[-8:-3]
             elif parts[-6] == "logs":
                 environment = '/'.join(parts[1:-6])
                 data_pipeline = parts[-5:-1]
