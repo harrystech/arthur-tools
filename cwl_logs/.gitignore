@@ -1,0 +1,39 @@
+# OS
+**/.DS_Store
+
+# IDE
+**/.idea
+.idea
+
+# serverless
+.serverless
+**/.serverless
+**/node_modules
+package-lock.json
+package.json
+**/workspace.xml
+
+# python cache
+__pycache__
+**/__pycache__
+**/*dist-info
+
+# dependencies
+**/certifi
+**/chardet
+**/elasticsearch
+**/idna
+**/requests
+**/requests_aws4auth
+**/urllib3
+**/snappy
+**/bin/*.py
+bin/*.py
+bin/chardetect
+README.rst
+HISTORY.rst
+NOTICE
+
+# NEVER COMMIT
+**/deploy_env
+

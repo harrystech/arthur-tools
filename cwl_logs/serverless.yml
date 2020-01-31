@@ -1,0 +1,68 @@
+service: DE-Cloudwatch-Logs-to-Elasticsearch
+
+plugins:
+  - serverless-pseudo-parameters
+custom:
+  region: ${self:provider.region}
+  stage: ${opt:stage, self:provider.stage}
+  esClusterArn: ${env:ES_CLUSTER_ARN}
+  esHost: ${env:ES_HOST}
+  esPort: ${env:ES_PORT}
+  monitoredLogGroup: ${env:MONITORED_LOG_GROUP}
+
+package:
+  individually: true
+  exclude:
+    - ".*/**"
+    - "**/**"
+    - "*"
+
+provider:
+  name: aws
+  runtime: python3.8
+  timeout: 60
+  region: us-east-1
+  stage: dev
+  versionFunctions: true
+  deploymentBucket:
+    name: ${env:SLS_DEPLOYMENT_BUCKET}  
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - logs:*
+      Resource:
+        - arn:aws:logs:${self:custom.region}:#{AWS::AccountId}:log-group
+
+    - Effect: Allow
+      Action:
+        - es:ESHttp*
+      Resource:
+        - ${self:custom.esClusterArn}/*
+
+functions:
+
+  LogsToElasticSearch:
+    handler: lambda_handler.process
+    memorySize: 512 # optional, in MB, default is 1024
+    timeout: 360 # optional, in seconds, default is 6
+    events:
+      - cloudwatchLog:
+          logGroup: ${self:custom.monitoredLogGroup}
+    environment:
+      ES_HOST: ${self:custom.esHost}
+      ES_PORT: ${self:custom.esPort}
+    package:
+      include:
+        - cwl_logs_to_es/**
+        - certifi/**
+        - chardet/**
+        - elasticsearch/**
+        - idna/**
+        - requests/**
+        - requests_aws4auth/**
+        - urllib3/**
+        - lambda_handler.py
+        - harrys_logging.py
+
+
