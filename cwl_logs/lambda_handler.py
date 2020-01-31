@@ -18,6 +18,11 @@ cwl_log_parser = ClodWatchLogsParser()
 
 
 # TODO: define DLQ and alerts strategy
+# TODO: tests!
+# TODO: ci/cd
+# TODO: cleanup parsing of dirty json
+# TODO: acceptance criteria
+
 def process(event, c):
     log.info(f"START")
     
