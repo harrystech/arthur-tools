@@ -8,7 +8,7 @@
 # Arthur Tools
 
 We have some tools that we developed originally for [Project Arthur](https://github.com/harrystech/arthur-redshift-etl)
-and then they appeared to more generally useful. So here they are.
+which then appeared to more generally useful. So here they are.
 
 ## Deploying CloudFormation templates
 
