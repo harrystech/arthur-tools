@@ -35,7 +35,7 @@ def list_objects(bucket_name, prefix, days_in_past_limit):
     for response in response_iterator:
         for info in response["Contents"]:
             # Arthur always logs to the error channel.
-            if info["Key"].endswith(("StdError.gz", "stderr.gz")):
+            if info["Key"].endswith(("StdError.gz", "stderr.gz")) and 'containers/application' not in info["Key"]:
                 if info["LastModified"] > earliest:
                     yield (info["Key"], info["LastModified"])
 
@@ -47,7 +47,7 @@ def invoke_log_parser(function_name, bucket_name, object_key):
     The function will be invoked with an abbreviated S3 event that contains the
     bucket name and object key information.
     """
-    logging.info("Invoking log parser for s3://{}/{}".format(bucket_name, object_key))
+    logging.info("Invoking log parser for object=s3://{}/{}".format(bucket_name, object_key))
     payload = {
         "Records": [
             {
@@ -66,21 +66,21 @@ def invoke_log_parser(function_name, bucket_name, object_key):
             FunctionName=function_name, InvocationType="RequestResponse", LogType="Tail", Payload=payload_bytes,
         )
     except Exception:
-        logging.exception("Failed to upload 's3://{}/{}':".format(bucket_name, object_key))
+        logging.exception("Invocation failed on object='s3://{}/{}':".format(bucket_name, object_key))
         raise
     logging.info("LogResult={!s}".format(base64.standard_b64decode(response["LogResult"])))
 
     status_code = response["StatusCode"]
     if status_code == 200:
-        logging.info("Finished parsing of 's3://{}/{}' successfully".format(bucket_name, object_key))
+        logging.info("Finished parsing of object='s3://{}/{}' successfully".format(bucket_name, object_key))
     else:
         logging.warning(
-            "Finished parsing of 's3://{}/{}' with status code {}".format(bucket_name, object_key, status_code)
+            "Finished parsing of object='s3://{}/{}' with status code {}".format(bucket_name, object_key, status_code)
         )
 
 
 def main(bucket, prefix, function_name, days_in_past_limit, threads):
-    logging.info("Attempting to load log files from s3://{}/{} using {}".format(bucket, prefix, function_name))
+    logging.info("Attempting to load log files from bucket={} using function={}".format(bucket, function_name))
     logging.info("Arguments that limit objects: prefix={}, days_limit={}".format(prefix, days_in_past_limit))
     objects = list_objects(bucket, prefix, days_in_past_limit)
     object_keys = list(map(itemgetter(0), sorted(objects, key=itemgetter(1), reverse=True)))
