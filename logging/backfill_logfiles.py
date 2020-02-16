@@ -97,6 +97,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
         description="Backfill Elasticsearch cluster using log files from the given bucket using the given lambda."
+        " (Tip: To load just one file, specify it as the prefix.)"
     )
     parser.add_argument(
         "--prefix", default="_logs", help="Limit objects to those with the given prefix (default: %(default)s)"
