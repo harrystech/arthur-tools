@@ -82,7 +82,7 @@ def lambda_handler(event, _):
             es = config.connect_to_es(host, port, use_auth=True)
             if not config.exists_index_template(es):
                 config.put_index_template(es)
-            processed = compile.load_records(file_uri)
+            processed = compile.load_records([file_uri])
             index_records(es, processed)
         except parse.NoRecordsFoundError:
             print("Failed to find log records in object '{}'".format(file_uri))
