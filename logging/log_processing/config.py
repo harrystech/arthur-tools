@@ -22,7 +22,7 @@ ES_ENDPOINT_BY_ENV_TYPE = "/DW-ETL/ES-By-Env-Type/{env_type}"
 ES_ENDPOINT_BY_BUCKET = "/DW-ETL/ES-By-Bucket/{bucket_name}"
 
 
-def log_index(date=None):
+def get_index_name(date=None):
     """Return name of index for current date (or specified date) with granularity of a day."""
     if date is None:
         instant = datetime.date.today()
@@ -138,7 +138,7 @@ def get_current_indices(client):
 
 def get_active_indices():
     today = datetime.datetime.utcnow()
-    names = [log_index(today - datetime.timedelta(days=days)) for days in range(0, OLDEST_INDEX_IN_DAYS)]
+    names = [get_index_name(today - datetime.timedelta(days=days)) for days in range(0, OLDEST_INDEX_IN_DAYS)]
     return sorted(names)
 
 

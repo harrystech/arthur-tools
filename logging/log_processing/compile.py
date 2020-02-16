@@ -20,33 +20,34 @@ from log_processing import parse
 
 
 def load_records(sources):
+    """
+    Load log records from a list of sources (as if they had all come from a single source.)
+
+    If a source is called "examples", the built-in examples are added.
+    If a source starts with "s3://", then we'll try to find it in S3.
+    Otherwise, the file by the name of the source had better exist locally.
+    """
     for source in sources:
         if source == "examples":
             for record in parse.create_example_records():
                 yield record
         else:
             if source.startswith("s3://"):
-                for record in load_remote_records(source):
+                for record in _load_records_using(_load_remote_content, source):
                     yield record
             else:
-                for record in _load_records_using(load_local_content, source):
+                for record in _load_records_using(_load_local_content, source):
                     yield record
 
 
-def load_remote_records(file_uri):
-    # Used by the lambda handler
-    for record in _load_records_using(load_remote_content, file_uri):
-        yield record
-
-
-def _load_records_using(content_opener, content_location):
+def _load_records_using(content_reader, content_location):
     print("Parsing '{}'".format(content_location))
-    lines = content_opener(content_location)
+    lines = content_reader(content_location)
     log_parser = parse.LogParser(content_location)
     return log_parser.split_log_lines(lines)
 
 
-def load_local_content(filename):
+def _load_local_content(filename):
     if filename.endswith(".gz"):
         with gzip.open(filename, 'rb') as f:
             lines = f.read().decode()
@@ -56,7 +57,7 @@ def load_local_content(filename):
     return lines
 
 
-def load_remote_content(uri):
+def _load_remote_content(uri):
     split_result = urllib.parse.urlsplit(uri)
     if split_result.scheme != "s3":
         raise ValueError("scheme {} not supported".format(split_result.scheme))
@@ -71,11 +72,6 @@ def load_remote_content(uri):
     else:
         lines = response.read().decode()
     return lines
-
-
-def print_message(record):
-    """Callback function which simply only prints the timestamp and the message of the log record."""
-    print("{0[@timestamp]} {0[etl_id]} {0[log_level]} {0[message]}".format(record))
 
 
 def filter_record(query, record):
@@ -93,7 +89,7 @@ def main():
     processed = load_records(sys.argv[2:])
     matched = filter(partial(filter_record, query), processed)
     for record in sorted(matched, key=lambda r: r["datetime"]["epoch_time_in_millis"]):
-        print_message(record)
+        print("{0[@timestamp]} {0[etl_id]} {0[log_level]} {0[message]}".format(record))
 
 
 if __name__ == "__main__":

@@ -8,7 +8,6 @@ As a lambda handler, extract the new file in S3 from the event information,
 parse that file and send it to ES domain.
 """
 
-import hashlib
 import itertools
 import sys
 import urllib.parse
@@ -32,24 +31,10 @@ def _build_actions_from(index, records):
         }
 
 
-def _build_meta_doc(context, event_data):
-    doc = {
-        "lambda_name": context.function_name,
-        "lambda_version": context.function_version,
-        "logfile": '/'.join((context.log_group_name, context.log_stream_name)),
-        "log_level": "INFO",
-        "@timestamp": event_data['eventTime'],
-        "context": {
-            "remaining_time_in_millis": context.get_remaining_time_in_millis()
-        }
-    }
-    return doc
-
-
 def index_records(es, records_generator):
     n_ok, n_errors = 0, 0
     for date, records in itertools.groupby(records_generator, key=lambda rec: rec["datetime"]["date"]):
-        index = config.log_index(date)
+        index = config.get_index_name(date)
         print("Indexing records into '{}'".format(index))
         ok, errors = elasticsearch.helpers.bulk(es, _build_actions_from(index, records))
         n_ok += ok
@@ -57,10 +42,9 @@ def index_records(es, records_generator):
             print("Errors: {}".format(errors))
             n_errors += len(errors)
     print("Indexed successfully: {:d}, unsuccessfully: {:d}".format(n_ok, n_errors))
-    return n_ok, n_errors
 
 
-def lambda_handler(event, context):
+def lambda_handler(event, _):
     """
     Callback handler for Lambda.
 
@@ -86,7 +70,7 @@ def lambda_handler(event, context):
             i, event_data['eventSource'], event_data['eventName'], event_data['eventTime'], bucket_name, object_key))
 
         if not (object_key.startswith("_logs/") or "/logs/" in object_key):
-            print("Path is not in log folder ... skipping this file")
+            print("Path is not in log folder: skipping this object")
             return
 
         file_uri = "s3://{}/{}".format(bucket_name, object_key)
@@ -95,26 +79,15 @@ def lambda_handler(event, context):
             es = config.connect_to_es(host, port, use_auth=True)
             if not config.exists_index_template(es):
                 config.put_index_template(es)
-            processed = compile.load_remote_records(file_uri)
-            ok, errors = index_records(es, processed)
+            processed = compile.load_records(file_uri)
+            index_records(es, processed)
         except parse.NoRecordsFoundError:
-            print("Failed to find records in object '{}'".format(file_uri))
+            print("Failed to find log records in object '{}'".format(file_uri))
             return
         except botocore.exceptions.ClientError as exc:
             error_code = exc.response['Error']['Code']
             print("Error code {} for object '{}'".format(error_code, file_uri))
             return
-
-        body = _build_meta_doc(context, event_data)
-        body["message"] = "Index result for '{}': ok = {}, errors = {}".format(file_uri, ok, errors)
-        body["original_logfile"] = file_uri
-
-        sha1_hash = hashlib.sha1()
-        sha1_hash.update(file_uri.encode())
-        id_ = sha1_hash.hexdigest()
-        res = es.index(index=config.log_index(), body=body, id=id_)
-        print("Sent meta information, result: {}, index: {}".format(res['result'], res['_index']))
-        print("Time remaining (ms):", context.get_remaining_time_in_millis())
 
 
 def main():
