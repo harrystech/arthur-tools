@@ -86,7 +86,7 @@ def main(bucket, prefix, function_name, days_in_past_limit, threads):
     object_keys = list(map(itemgetter(0), sorted(objects, key=itemgetter(1), reverse=True)))
     logging.info("Found {} object(s) to process".format(len(object_keys)))
 
-    logging.info("Starting thread pool (with {} threads".format(threads))
+    logging.info("Starting thread pool with {} thread(s)".format(threads))
     lambda_caller = partial(invoke_log_parser, function_name, bucket)
     with ThreadPoolExecutor(max_workers=threads, thread_name_prefix="lambda_caller") as executor:
         executor.map(lambda_caller, object_keys)
