@@ -63,11 +63,14 @@ def lambda_handler(event, _):
         ]
     }
     """
-    for i, event_data in enumerate(event['Records']):
-        bucket_name = event_data['s3']['bucket']['name']
-        object_key = urllib.parse.unquote_plus(event_data['s3']['object']['key'])
-        print("Event #{:d}: source={}, event={}, time={}, bucket={}, key={}".format(
-            i, event_data['eventSource'], event_data['eventName'], event_data['eventTime'], bucket_name, object_key))
+    for i, event_data in enumerate(event["Records"]):
+        bucket_name = event_data["s3"]["bucket"]["name"]
+        object_key = urllib.parse.unquote_plus(event_data["s3"]["object"]["key"])
+        print(
+            "Event #{:d}: source={}, event={}, time={}, bucket={}, key={}".format(
+                i, event_data["eventSource"], event_data["eventName"], event_data["eventTime"], bucket_name, object_key
+            )
+        )
 
         if not (object_key.startswith("_logs/") or "/logs/" in object_key):
             print("Path is not in log folder: skipping this object")
@@ -85,7 +88,7 @@ def lambda_handler(event, _):
             print("Failed to find log records in object '{}'".format(file_uri))
             return
         except botocore.exceptions.ClientError as exc:
-            error_code = exc.response['Error']['Code']
+            error_code = exc.response["Error"]["Code"]
             print("Error code {} for object '{}'".format(error_code, file_uri))
             return
 
