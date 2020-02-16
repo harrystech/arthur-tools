@@ -15,7 +15,7 @@ LOG_RECORD_PROPERTIES = {
     "datetime": {
         "properties": {
             "epoch_time_in_millis": {"type": "long"},
-            "date": {"type": "date", "format": "strict_date"},  # used to select index during upload
+            "date": {"type": "date", "format": "strict_date"},
             "year": {"type": "integer"},
             "month": {"type": "integer"},
             "day": {"type": "integer"},

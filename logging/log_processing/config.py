@@ -13,8 +13,7 @@ import requests_aws4auth
 
 from log_processing import parse
 
-# Index for our log records
-LOG_INDEX_PATTERN = "dw-etl-arthur-logs-*"
+LOG_INDEX_PATTERN = "dw-logs-*"
 LOG_INDEX_TEMPLATE_NAME = LOG_INDEX_PATTERN.replace("-*", "-template")
 OLDEST_INDEX_IN_DAYS = 380
 
@@ -23,14 +22,14 @@ ES_ENDPOINT_BY_BUCKET = "/DW-ETL/ES-By-Bucket/{bucket_name}"
 
 
 def get_index_name(date=None):
-    """Return name of index for current date (or specified date) with granularity of a day."""
+    """Return name of index for current date (or specified date) with granularity of one month."""
     if date is None:
         instant = datetime.date.today()
     elif isinstance(date, datetime.date):
         instant = date
     else:
         instant = datetime.datetime.strptime(date, "%Y-%m-%d").date()
-    return instant.strftime(LOG_INDEX_PATTERN.replace("-*", "-%Y-%m-%d"))
+    return instant.strftime(LOG_INDEX_PATTERN.replace("-*", "-%Y-%m"))
 
 
 def set_es_endpoint(env_type, bucket_name, endpoint):
@@ -121,16 +120,16 @@ def put_index_template(client):
 
 
 def get_current_indices(client):
+    """Return set of indices currently used in the cluster."""
     print("Looking for indices matching {}".format(LOG_INDEX_PATTERN))
     response = client.indices.get(index=LOG_INDEX_PATTERN, allow_no_indices=True)
-    names = [response[index]["settings"]["index"]["provided_name"] for index in response]
-    return sorted(names)
+    return frozenset(response[index]["settings"]["index"]["provided_name"] for index in response)
 
 
-def get_active_indices():
+def get_allowable_indices():
+    """Return set of indices expected in use given our retention period."""
     today = datetime.datetime.utcnow()
-    names = [get_index_name(today - datetime.timedelta(days=days)) for days in range(0, OLDEST_INDEX_IN_DAYS)]
-    return sorted(names)
+    return frozenset(log_index(today - datetime.timedelta(days=days)) for days in range(0, OLDEST_INDEX_IN_DAYS))
 
 
 def build_parser():
@@ -187,13 +186,11 @@ def sub_get_indices(args):
 def sub_delete_stale_indices(args):
     host, port = get_es_endpoint(env_type=args.env_type)
     es = connect_to_es(host, port, use_auth=False)
-    current_names = get_current_indices(es)
-    active_names = frozenset(get_active_indices())
-    stale = frozenset(current_names).difference(active_names)
+    stale = get_current_indices(es).difference(get_allowable_indices())
     if not stale:
         print("Found no indices older than {} days.".format(OLDEST_INDEX_IN_DAYS))
         return
-    for name in sorted(stale):
+    for name in reversed(sorted(stale)):
         print("** ", name)
     print("Indices marked '**' are older than {} days.".format(OLDEST_INDEX_IN_DAYS))
     try:
