@@ -129,16 +129,16 @@ def put_index_template(client):
 
 
 def get_current_indices(client):
+    """Return set of indices currently used in the cluster."""
     print("Looking for indices matching {}".format(LOG_INDEX_PATTERN))
     response = client.indices.get(index=LOG_INDEX_PATTERN, allow_no_indices=True)
-    names = [response[index]["settings"]["index"]["provided_name"] for index in response]
-    return sorted(names)
+    return frozenset(response[index]["settings"]["index"]["provided_name"] for index in response)
 
 
-def get_active_indices():
+def get_allowable_indices():
+    """Return set of indices expected in use given our retention period."""
     today = datetime.datetime.utcnow()
-    names = [log_index(today - datetime.timedelta(days=days)) for days in range(0, OLDEST_INDEX_IN_DAYS)]
-    return sorted(names)
+    return frozenset(log_index(today - datetime.timedelta(days=days)) for days in range(0, OLDEST_INDEX_IN_DAYS))
 
 
 def build_parser():
@@ -195,9 +195,7 @@ def sub_get_indices(args):
 def sub_delete_stale_indices(args):
     host, port = get_es_endpoint(env_type=args.env_type)
     es = connect_to_es(host, port, use_auth=False)
-    current_names = get_current_indices(es)
-    active_names = frozenset(get_active_indices())
-    stale = frozenset(current_names).difference(active_names)
+    stale = get_current_indices(es).difference(get_allowable_indices())
     if not stale:
         print("Found no indices older than {} days.".format(OLDEST_INDEX_IN_DAYS))
         return
