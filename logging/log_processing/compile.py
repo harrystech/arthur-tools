@@ -9,6 +9,7 @@ Elasticsearch Service pool. That should quench your thirst for log fluids.
 
 import gzip
 import io
+import logging
 import sys
 import urllib.parse
 from functools import partial
@@ -17,6 +18,8 @@ import boto3
 
 # Note that relative imports don't work with Lambda
 from log_processing import parse
+
+logger = logging.getLogger(__name__)
 
 
 def load_records(sources):
@@ -41,7 +44,7 @@ def load_records(sources):
 
 
 def _load_records_using(content_reader, content_location):
-    print("Parsing '{}'".format(content_location))
+    logger.info(f"Parsing '{content_location}'")
     lines = content_reader(content_location)
     log_parser = parse.LogParser(content_location)
     return log_parser.split_log_lines(lines)
@@ -60,7 +63,7 @@ def _load_local_content(filename):
 def _load_remote_content(uri):
     split_result = urllib.parse.urlsplit(uri)
     if split_result.scheme != "s3":
-        raise ValueError("scheme {} not supported".format(split_result.scheme))
+        raise ValueError(f"scheme {split_result.scheme} not supported")
     bucket_name, object_key = split_result.netloc, split_result.path.lstrip("/")
     s3 = boto3.resource("s3")
     bucket = s3.Bucket(bucket_name)
@@ -83,7 +86,7 @@ def filter_record(query, record):
 
 def main():
     if len(sys.argv) < 3:
-        print("Usage: {} QUERY LOGFILE [LOGFILE ...]".format(sys.argv[0]))
+        print(f"Usage: {sys.argv[0]} QUERY LOGFILE [LOGFILE ...]")
         exit(1)
     query = str(sys.argv[1])
     processed = load_records(sys.argv[2:])
@@ -93,4 +96,5 @@ def main():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     main()

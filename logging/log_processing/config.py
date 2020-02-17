@@ -4,14 +4,18 @@ Access to shared settings and managing indices
 
 import argparse
 import datetime
+import logging
 import sys
 import time
+from functools import lru_cache
 
 import boto3
 import elasticsearch
 import requests_aws4auth
 
 from log_processing import parse
+
+logger = logging.getLogger(__name__)
 
 LOG_INDEX_PATTERN = "dw-logs-*"
 LOG_INDEX_TEMPLATE_NAME = LOG_INDEX_PATTERN.replace("-*", "-template")
@@ -21,6 +25,7 @@ ES_ENDPOINT_BY_ENV_TYPE = "/DW-ETL/ES-By-Env-Type/{env_type}"
 ES_ENDPOINT_BY_BUCKET = "/DW-ETL/ES-By-Bucket/{bucket_name}"
 
 
+@lru_cache()
 def get_index_name(date=None):
     """Return name of index for current date (or specified date) with granularity of one month."""
     if date is None:
@@ -37,7 +42,7 @@ def set_es_endpoint(env_type, bucket_name, endpoint):
     client = boto3.client("ssm")
     for parameter in (ES_ENDPOINT_BY_ENV_TYPE, ES_ENDPOINT_BY_BUCKET):
         name = parameter.format(env_type=env_type, bucket_name=bucket_name)
-        print("Setting parameter '{}'".format(name))
+        logger.info(f"Setting parameter '{name}'")
         client.put_parameter(
             Name=name,
             Description="Value of 'host:port' of Elasticsearch cluster for log processing",
@@ -59,7 +64,7 @@ def get_es_endpoint(env_type=None, bucket_name=None):
     else:
         raise ValueError("one of 'env_type' or 'bucket_name' must be not None")
     client = boto3.client("ssm")
-    print("Looking up parameter '{}'".format(name))
+    logger.info(f"Looking up parameter '{name}'")
     response = client.get_parameter(Name=name, WithDecryption=False)
     es_endpoint = response["Parameter"]["Value"]
     host, port = es_endpoint.rsplit(":", 1)
@@ -69,8 +74,8 @@ def get_es_endpoint(env_type=None, bucket_name=None):
 def _aws_auth():
     # https://github.com/sam-washington/requests-aws4auth/pull/2
     session = boto3.Session()
-    print(
-        "Retrieving credentials (profile_name={}, region_name={})".format(session.profile_name, session.region_name),
+    logger.info(
+        f"Retrieving credentials (profile_name={session.profile_name}, region_name={session.region_name})",
         file=sys.stderr,
     )
     credentials = session.get_credentials()
@@ -115,13 +120,13 @@ def put_index_template(client):
         "settings": {"number_of_shards": 2, "number_of_replicas": 1},
         "mappings": {"properties": parse.LogRecord.index_properties()},
     }
-    print("Updating index template '{}' (version={})".format(LOG_INDEX_TEMPLATE_NAME, version))
+    logger.info(f"Updating index template '{LOG_INDEX_TEMPLATE_NAME}' (version={version})")
     client.indices.put_template(LOG_INDEX_TEMPLATE_NAME, body)
 
 
 def get_current_indices(client):
     """Return set of indices currently used in the cluster."""
-    print("Looking for indices matching {}".format(LOG_INDEX_PATTERN))
+    logger.info(f"Looking for indices matching '{LOG_INDEX_PATTERN}'")
     response = client.indices.get(index=LOG_INDEX_PATTERN, allow_no_indices=True)
     return frozenset(response[index]["settings"]["index"]["provided_name"] for index in response)
 
@@ -129,7 +134,7 @@ def get_current_indices(client):
 def get_allowable_indices():
     """Return set of indices expected in use given our retention period."""
     today = datetime.datetime.utcnow()
-    return frozenset(log_index(today - datetime.timedelta(days=days)) for days in range(0, OLDEST_INDEX_IN_DAYS))
+    return frozenset(get_index_name(today - datetime.timedelta(days=days)) for days in range(0, OLDEST_INDEX_IN_DAYS))
 
 
 def build_parser():
@@ -163,7 +168,7 @@ def build_parser():
 
 def sub_get_endpoint(args):
     host, port = get_es_endpoint(env_type=args.env_type)
-    print("Found ES domain at '{}:{}'".format(host, port))
+    logger.info(f"Found ES domain at '{host}:{port}'")
 
 
 def sub_set_endpoint(args):
@@ -179,7 +184,7 @@ def sub_put_index_template(args):
 def sub_get_indices(args):
     host, port = get_es_endpoint(env_type=args.env_type)
     es = connect_to_es(host, port, use_auth=False)
-    for name in get_current_indices(es):
+    for name in reversed(sorted(get_current_indices(es))):
         print("   ", name)
 
 
@@ -188,11 +193,11 @@ def sub_delete_stale_indices(args):
     es = connect_to_es(host, port, use_auth=False)
     stale = get_current_indices(es).difference(get_allowable_indices())
     if not stale:
-        print("Found no indices older than {} days.".format(OLDEST_INDEX_IN_DAYS))
+        print(f"Found no indices older than {OLDEST_INDEX_IN_DAYS} days.")
         return
     for name in reversed(sorted(stale)):
         print("** ", name)
-    print("Indices marked '**' are older than {} days.".format(OLDEST_INDEX_IN_DAYS))
+    print(f"Indices marked '**' are older than {OLDEST_INDEX_IN_DAYS} days.")
     try:
         proceed = input("Proceed to delete old indices? (y/[n]) ")
     except EOFError:
@@ -212,4 +217,5 @@ def main():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     main()
