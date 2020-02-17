@@ -75,7 +75,11 @@ def lambda_handler(event, context):
     for i, event_data in enumerate(event["Records"]):
         logger.info(
             "Event #{i}: source={eventSource}, name={eventName}, time={eventTime}".format(i=i, **event_data),
-            extra={"event_source": event_data["eventSource"], "event_name": event_data["eventName"]},
+            extra={
+                "event.source": event_data["eventSource"],
+                "event.name": event_data["eventName"],
+                "event.time": event_data["eventTime"],
+            },
         )
         bucket_name = event_data["s3"]["bucket"]["name"]
         object_key = urllib.parse.unquote_plus(event_data["s3"]["object"]["key"])

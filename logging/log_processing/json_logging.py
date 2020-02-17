@@ -60,8 +60,8 @@ class JsonFormatter(logging.Formatter):
 
     converter = time.gmtime
 
-    # The map either specifies the name to be used or None if attributed will be suppressed.
     attribute_mapping = {
+        # LogRecord attributes for which we want new names:
         "funcName": "source.function",
         "levelname": "log_level",
         "levelno": "log_severity",
@@ -72,6 +72,11 @@ class JsonFormatter(logging.Formatter):
         "process": "process.id",
         "processName": "process.name",
         "threadName": "thread.name",
+        # Common context attributes which we want to rename:
+        "function_name": "lambda.function_name",
+        "function_version": "lambda.function_version",
+        "log_stream_name": "cwl.log_stream_name",
+        # LogRecord attributes which we want to suppress:
         "args": None,
         "created": None,
         "msecs": None,
