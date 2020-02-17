@@ -58,10 +58,14 @@ class JsonFormatter(logging.Formatter):
         * The timestamps are in UTC.
     """
 
+    # This format is compatible with "strict_date_time" in Elasticsearch (yyyy-MM-dd'T'HH:mm:ss.SSSZZ).
     converter = time.gmtime
+    default_time_format = "%Y-%m-%dT%H:%M:%SZ"
+    default_msec_format = "%.19s.%03dZ"
 
     attribute_mapping = {
         # LogRecord attributes for which we want new names:
+        "filename": "source:filename",
         "funcName": "source.function",
         "levelname": "log_level",
         "levelno": "log_severity",
@@ -86,6 +90,7 @@ class JsonFormatter(logging.Formatter):
     }
 
     def format(self, record):
+        """Format log record by creating a JSON-format in a string."""
         data = {}
         for attr, value in record.__dict__.items():
             if value is None:
@@ -98,6 +103,8 @@ class JsonFormatter(logging.Formatter):
                 data[attr] = value
         # The "message" is added last so an accidentally specified message in the extra kwargs is ignored.
         data["message"] = record.getMessage()
+        # Finally, always add a timestamp.
+        data["gmtime"] = self.formatTime(record)
         return json.dumps(data, separators=(",", ":"), sort_keys=True)
 
 
@@ -125,7 +132,7 @@ def configure_logging():
     logging.config.dictConfig(LOGGING_STREAM_CONFIG)
 
 
-# For convenience to avoid too many logging imports.
+# Just for convenience (avoid having too many imports of logging):
 def getLogger(name):
     return logging.getLogger(name)
 
