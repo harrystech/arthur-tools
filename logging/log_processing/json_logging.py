@@ -91,8 +91,8 @@ class JsonFormatter(logging.Formatter):
 LOGGING_STREAM_CONFIG = {
     "version": 1,
     "disable_existing_loggers": False,
-    "formatters": {"json_formatter": {"()": JsonFormatter},},
-    "filters": {"context_filter": {"()": ContextFilter},},
+    "formatters": {"json_formatter": {"()": JsonFormatter}},
+    "filters": {"context_filter": {"()": ContextFilter}},
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
@@ -103,6 +103,7 @@ LOGGING_STREAM_CONFIG = {
         }
     },
     "root": {"level": "INFO", "handlers": ["console"]},
+    "loggers": {"botocore": {"qualname": "botocore", "handlers": ["console"], "level": "WARNING", "propagate": 0}},
 }
 
 

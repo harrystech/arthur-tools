@@ -1,7 +1,7 @@
 LOG_RECORD_PROPERTIES = {
     "application_name": {"type": "keyword"},
     "environment": {"type": "keyword"},
-    "logfile": {"type": "keyword",},
+    "logfile": {"type": "keyword"},
     "data_pipeline": {
         "properties": {
             "id": {"type": "keyword"},
@@ -10,7 +10,7 @@ LOG_RECORD_PROPERTIES = {
             "attempt": {"type": "keyword"},
         }
     },
-    "emr_cluster": {"properties": {"id": {"type": "keyword"}, "step_id": {"type": "keyword"},}},
+    "emr_cluster": {"properties": {"id": {"type": "keyword"}, "step_id": {"type": "keyword"}}},
     "@timestamp": {"type": "date", "format": "strict_date_optional_time"},  # generic ISO datetime parser
     "datetime": {
         "properties": {
@@ -27,13 +27,13 @@ LOG_RECORD_PROPERTIES = {
     },
     "etl_id": {"type": "keyword"},
     "log_level": {"type": "keyword"},
-    "logger": {"type": "text", "analyzer": "simple", "fields": {"name": {"type": "keyword"}},},
+    "logger": {"type": "text", "analyzer": "simple", "fields": {"name": {"type": "keyword"}}},
     "thread_name": {"type": "keyword"},
-    "source_code": {"properties": {"filename": {"type": "text"}, "line_number": {"type": "integer"},}},
+    "source_code": {"properties": {"filename": {"type": "text"}, "line_number": {"type": "integer"}}},
     "message": {
         "type": "text",
         "analyzer": "standard",
-        "fields": {"raw": {"type": "keyword"}, "english": {"type": "text", "analyzer": "english",}},
+        "fields": {"raw": {"type": "keyword"}, "english": {"type": "text", "analyzer": "english"}},
     },
     "monitor": {
         "properties": {
@@ -46,5 +46,5 @@ LOG_RECORD_PROPERTIES = {
             "error_codes": {"type": "text"},
         }
     },
-    "parser": {"properties": {"start_pos": {"type": "long"}, "end_pos": {"type": "long"}, "chars": {"type": "long"},}},
+    "parser": {"properties": {"start_pos": {"type": "long"}, "end_pos": {"type": "long"}, "chars": {"type": "long"}}},
 }
