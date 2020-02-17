@@ -106,6 +106,8 @@ def lambda_handler(event, context):
             logger.warning(f"Error code {error_code} for object '{file_uri}'")
             continue
 
+        logger.info("Indexed log records successfully.", extra={"log_file_uri": file_uri})
+
 
 def main():
     if len(sys.argv) < 3:

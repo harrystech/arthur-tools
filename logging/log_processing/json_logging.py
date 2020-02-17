@@ -18,21 +18,21 @@ class ContextFilter(logging.Filter):
     means that we will store some values with the class, not the instances.
     """
 
-    aws_request_id = None
-    function_name = None
-    function_version = None
-    log_group_name = None
-    log_stream_name = None
+    _context = {
+        "aws_request_id": None,
+        "function_name": None,
+        "function_version": None,
+        "log_group_name": None,
+        "log_stream_name": None,
+    }
 
     def filter(self, record):
         """
         Modify record in place for additional fields, then return True to continue processing.
         """
-        record.aws_request_id = self.aws_request_id
-        record.function_name = self.function_name
-        record.function_version = self.function_version
-        record.log_group_name = self.log_group_name
-        record.log_stream_name = self.log_stream_name
+        for field, value in self._context.items():
+            if value is not None:
+                setattr(record, field, value)
         return True
 
     @classmethod
@@ -40,12 +40,13 @@ class ContextFilter(logging.Filter):
         """
         Update any of the fields stored in the (global) context filter.
 
-        Note that this doesn't set fields not already defined.
-        It is ok to pass in args that are unknown -- they are ignored.
+        Note that trying to set a field that's not been defined raises a ValueError.
         """
-        for key, value in kwargs.items():
-            if hasattr(cls, key):
-                setattr(cls, key, value)
+        for field, value in kwargs.items():
+            if field in cls._context:
+                cls._context[field] = value
+            else:
+                raise ValueError(f"unexpected field: '{field}'")
 
 
 class JsonFormatter(logging.Formatter):
@@ -61,8 +62,16 @@ class JsonFormatter(logging.Formatter):
 
     # The map either specifies the name to be used or None if attributed will be suppressed.
     attribute_mapping = {
-        "levelname": "level_name",
+        "funcName": "source.function",
+        "levelname": "log_level",
+        "levelno": "log_severity",
+        "lineno": "source.line_number",
+        "module": "source.module",
         "name": "logger",
+        "pathname": "source.pathname",
+        "process": "process.id",
+        "processName": "process.name",
+        "threadName": "thread.name",
         "args": None,
         "created": None,
         "msecs": None,
@@ -122,6 +131,6 @@ def update_context(**kwargs):
 
 if __name__ == "__main__":
     configure_logging()
-    update_context(request_id="62E538E9-E9C5-415A-9771-6588F9A1A708")
+    update_context(aws_request_id="62E538E9-E9C5-415A-9771-6588F9A1A708")
 
     logging.info("Message at INFO level", extra={"stuff": "more"})
