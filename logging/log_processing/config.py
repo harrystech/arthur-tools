@@ -74,10 +74,7 @@ def get_es_endpoint(env_type=None, bucket_name=None):
 def _aws_auth():
     # https://github.com/sam-washington/requests-aws4auth/pull/2
     session = boto3.Session()
-    logger.info(
-        f"Retrieving credentials (profile_name={session.profile_name}, region_name={session.region_name})",
-        file=sys.stderr,
-    )
+    logger.info(f"Retrieving credentials (profile_name={session.profile_name}, region_name={session.region_name})",)
     credentials = session.get_credentials()
     aws4auth = requests_aws4auth.AWS4Auth(
         credentials.access_key, credentials.secret_key, session.region_name, "es", session_token=credentials.token

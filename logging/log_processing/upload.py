@@ -85,11 +85,7 @@ def lambda_handler(event, context):
             continue
 
         file_uri = "s3://{}/{}".format(bucket_name, object_key)
-        try:
-            processed = compile.load_records([file_uri])
-        except parse.NoRecordsFoundError:
-            logger.info("Failed to find log records in object '{}'".format(file_uri))
-            continue
+        processed = compile.load_records([file_uri])
 
         try:
             host, port = config.get_es_endpoint(bucket_name=bucket_name)
@@ -102,6 +98,9 @@ def lambda_handler(event, context):
 
         try:
             index_records(es, processed)
+        except parse.NoRecordsFoundError:
+            logger.info("Failed to find log records in object '{}'".format(file_uri))
+            continue
         except botocore.exceptions.ClientError as exc:
             error_code = exc.response["Error"]["Code"]
             logger.warning(f"Error code {error_code} for object '{file_uri}'")
