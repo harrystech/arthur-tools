@@ -19,4 +19,3 @@ COPY requirements.txt .
 RUN pip3 install -r requirements.txt -t /app/python-requirements/
 
 WORKDIR /app/de-cloudwatch-logs-to-elasticsearch/
-

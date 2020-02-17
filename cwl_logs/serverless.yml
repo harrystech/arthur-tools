@@ -2,6 +2,7 @@ service: DE-Cloudwatch-Logs-to-Elasticsearch
 
 plugins:
   - serverless-pseudo-parameters
+
 custom:
   region: ${self:provider.region}
   stage: ${opt:stage, self:provider.stage}
@@ -44,8 +45,8 @@ functions:
 
   LogsToElasticSearch:
     handler: lambda_handler.process
-    memorySize: 512 # optional, in MB, default is 1024
-    timeout: 360 # optional, in seconds, default is 6
+    memorySize: 512  # optional, in MB, default is 1024
+    timeout: 360  # optional, in seconds, default is 6
     events:
       - cloudwatchLog:
           logGroup: ${self:custom.monitoredLogGroup}
@@ -63,6 +64,3 @@ functions:
         - requests_aws4auth/**
         - urllib3/**
         - lambda_handler.py
-        - harrys_logging.py
-
-

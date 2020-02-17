@@ -19,4 +19,3 @@ Currently using the following common set of fields across applications/lambdas:
     function_name               [lambda or applciation name]
     function_version            [lambda or application version]
     error_type                  [when logging exceptions, please attach this - useful to classify/group errors]
-

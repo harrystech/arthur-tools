@@ -1,10 +1,13 @@
-import json, logging, sys, warnings
+import json
+import logging
+import sys
+import warnings
 from unittest import TestCase
 
-from harrys_logging import setup_logging
 from cwl_logs_to_es_tests import TEST_ROOT_DIR
+from harrys_logging import setup_logging
 
-setup_logging(format_type='flat')
+setup_logging(format_type="flat")
 
 
 class ClodWatchLogsParserTests(TestCase):
@@ -15,7 +18,7 @@ class ClodWatchLogsParserTests(TestCase):
         if not sys.warnoptions:
             warnings.simplefilter("ignore")
 
-        with open(f'{TEST_ROOT_DIR}/test_data/flat_aws_lambda_start_stop.json', 'rb') as f:
+        with open(f"{TEST_ROOT_DIR}/test_data/flat_aws_lambda_start_stop.json", "rb") as f:
             cls.flat_aws_lambda_start_stop = json.loads(f.read())
 
     def test_gunzip_bytes_obj(self):
