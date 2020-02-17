@@ -68,7 +68,7 @@ def invoke_log_parser(function_name, bucket_name, object_key):
     except Exception:
         logging.exception("Invocation failed on object='s3://{}/{}':".format(bucket_name, object_key))
         raise
-    logging.info("LogResult={!s}".format(base64.standard_b64decode(response["LogResult"])))
+    logging.info("Tail of log:\n" + base64.standard_b64decode(response["LogResult"]).decode())
 
     status_code = response["StatusCode"]
     if status_code == 200:
@@ -79,13 +79,14 @@ def invoke_log_parser(function_name, bucket_name, object_key):
         )
 
 
-def main(bucket, prefix, function_name, days_in_past_limit, threads):
+def main(bucket, prefix, function_name, days_in_past_limit, max_threads):
     logging.info("Attempting to load log files from bucket={} using function={}".format(bucket, function_name))
     logging.info("Arguments that limit objects: prefix={}, days_limit={}".format(prefix, days_in_past_limit))
     objects = list_objects(bucket, prefix, days_in_past_limit)
     object_keys = list(map(itemgetter(0), sorted(objects, key=itemgetter(1), reverse=True)))
     logging.info("Found {} object(s) to process".format(len(object_keys)))
 
+    threads = min(len(object_keys), max_threads)
     logging.info("Starting thread pool with {} thread(s)".format(threads))
     lambda_caller = partial(invoke_log_parser, function_name, bucket)
     with ThreadPoolExecutor(max_workers=threads, thread_name_prefix="lambda_caller") as executor:
