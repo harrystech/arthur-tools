@@ -3,9 +3,9 @@ Access to shared settings and managing indices
 """
 
 import argparse
-import datetime
 import sys
 import time
+import datetime
 
 import boto3
 import elasticsearch
