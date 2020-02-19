@@ -7,8 +7,8 @@ log file posted by the data pipelines is automatically drained into an
 Elasticsearch Service pool. That should quench your thirst for log fluids.
 """
 
-import gzip
 import io
+import gzip
 import sys
 import urllib.parse
 from functools import partial
