@@ -47,9 +47,4 @@ LOG_RECORD_PROPERTIES = {
         }
     },
     "parser": {"properties": {"start_pos": {"type": "long"}, "end_pos": {"type": "long"}, "chars": {"type": "long"}}},
-    # These last properties are only used by the Lambda handler:
-    "lambda_name": {"type": "keyword"},
-    "lambda_version": {"type": "keyword"},
-    "context": {"properties": {"remaining_time_in_millis": {"type": "long"}}},
-    "original_logfile": {"type": "keyword"},
 }

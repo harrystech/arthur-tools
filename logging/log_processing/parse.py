@@ -91,7 +91,7 @@ class LogRecord(collections.UserDict):
             try:
                 monitor_payload = json.loads(payload_text)
             except json.decoder.JSONDecodeError as exc:
-                print("Partial monitor payload detected in '{}': {}".format(payload_text, exc))
+                print(f"Partial monitor payload detected in '{payload_text}': {exc}")
             else:
                 self["monitor"] = {
                     k: v
