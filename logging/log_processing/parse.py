@@ -6,8 +6,8 @@ When called by itself, this will run a set of example log lines through the pars
 
 import calendar
 import collections
-import datetime
 import copy
+import datetime
 import hashlib
 import json
 import re
@@ -45,9 +45,9 @@ class LogRecord(collections.UserDict):
             self["thread_name"],
             self["source_code"]["filename"],
             self["source_code"]["line_number"],
-            self["message"]
+            self["message"],
         )
-        sha1_hash.update(' '.join(map(str, key_values)).encode())
+        sha1_hash.update(" ".join(map(str, key_values)).encode())
         return sha1_hash.hexdigest()
 
     def update_from(self, match):
@@ -68,20 +68,23 @@ class LogRecord(collections.UserDict):
         else:
             ts += "{:03d}".format(self.__counter[ts])  # 04:05:06,789 -> 04:05:06,789001
         timestamp = datetime.datetime.strptime(ts, "%Y-%m-%d %H:%M:%S,%f").replace(tzinfo=datetime.timezone.utc)
-        self.update({
-            "@timestamp": timestamp.isoformat(),  # Python datetime drops milliseconds if value is 0.
-            "datetime": {
-                "epoch_time_in_millis": calendar.timegm(timestamp.timetuple()) * 1000 + timestamp.microsecond // 1000,
-                "date": timestamp.date().isoformat(),
-                "year": timestamp.year,
-                "month": timestamp.month,
-                "day": timestamp.day,
-                "day_of_week": timestamp.date().isoweekday(),
-                "hour": timestamp.hour,
-                "minute": timestamp.minute,
-                "second": timestamp.second
+        self.update(
+            {
+                "@timestamp": timestamp.isoformat(),  # Python datetime drops milliseconds if value is 0.
+                "datetime": {
+                    "epoch_time_in_millis": calendar.timegm(timestamp.timetuple()) * 1000
+                    + timestamp.microsecond // 1000,
+                    "date": timestamp.date().isoformat(),
+                    "year": timestamp.year,
+                    "month": timestamp.month,
+                    "day": timestamp.day,
+                    "day_of_week": timestamp.date().isoweekday(),
+                    "hour": timestamp.hour,
+                    "minute": timestamp.minute,
+                    "second": timestamp.second,
+                },
             }
-        })
+        )
         # --- Monitor payload ---
         if values["message"].startswith("Monitor payload = "):
             payload_text = values["message"].replace("Monitor payload = ", "", 1)
@@ -90,8 +93,11 @@ class LogRecord(collections.UserDict):
             except json.decoder.JSONDecodeError as exc:
                 print("Partial monitor payload detected in '{}': {}".format(payload_text, exc))
             else:
-                self["monitor"] = {k: v for k, v in monitor_payload.items()
-                                   if k in ["monitor_id", "step", "event", "target", "elapsed"]}
+                self["monitor"] = {
+                    k: v
+                    for k, v in monitor_payload.items()
+                    if k in ["monitor_id", "step", "event", "target", "elapsed"]
+                }
                 if "errors" in monitor_payload:
                     self["monitor"]["error_codes"] = " ".join(error["code"] for error in monitor_payload["errors"])
                 if "extra" in monitor_payload and "rowcount" in monitor_payload["extra"]:
@@ -107,7 +113,7 @@ class LogRecord(collections.UserDict):
     def message(self, value):
         # Elasticsearch has a max of 32766 for "immense" terms.
         if len(value) >= 32766:
-            self["message"] = value[:32763] + '...'
+            self["message"] = value[:32763] + "..."
         else:
             self["message"] = value
 
@@ -144,10 +150,7 @@ class LogParser:
     def __init__(self, logfile):
         logfile = str(logfile)
         # Information that is copied into every record
-        self.shared_info = {
-            "application_name": "arthur-redshift-etl",
-            "logfile": logfile
-        }
+        self.shared_info = {"application_name": "arthur-redshift-etl", "logfile": logfile}
         # Try to find the information for the Data Pipeline or EMR cluster
         df_environment, data_pipeline = self.extract_data_pipeline_information()
         j_environment, emr_cluster = self.extract_emr_cluster_information()
@@ -187,20 +190,20 @@ class LogParser:
         >>> lp.shared_info["data_pipeline"]["id"]
         'df-<id>'
         """
-        parts = self.shared_info["logfile"].replace("s3://", "", 1).split('/')
+        parts = self.shared_info["logfile"].replace("s3://", "", 1).split("/")
         if len(parts) >= 8:
             if parts[1] == "_logs":
                 if parts[-3] == "steps":
-                    environment = '/'.join(parts[2:-8])
+                    environment = "/".join(parts[2:-8])
                     data_pipeline = parts[-8:-4]
                 else:
-                    environment = '/'.join(parts[2:-5])
+                    environment = "/".join(parts[2:-5])
                     data_pipeline = parts[-5:-1]
             elif len(parts) > 11 and parts[-9] == "logs" and parts[-3] == "steps":
-                environment = '/'.join(parts[1:-9])
+                environment = "/".join(parts[1:-9])
                 data_pipeline = parts[-8:-3]
             elif parts[-6] == "logs":
-                environment = '/'.join(parts[1:-6])
+                environment = "/".join(parts[1:-6])
                 data_pipeline = parts[-5:-1]
             else:
                 environment = None
@@ -239,17 +242,17 @@ class LogParser:
         >>> lp.shared_info["emr_cluster"]["id"]
         'j-<id>'
         """
-        parts = self.shared_info["logfile"].replace("s3://", "", 1).split('/')
+        parts = self.shared_info["logfile"].replace("s3://", "", 1).split("/")
         if len(parts) >= 7 and parts[-3] == "steps":
             long_form = len(parts) >= 11 and parts[-4] == "hadoop"
             if long_form and parts[1] == "_logs":
-                environment = '/'.join(parts[2:-8])
+                environment = "/".join(parts[2:-8])
             elif parts[1] == "_logs":
-                environment = '/'.join(parts[2:-4])
+                environment = "/".join(parts[2:-4])
             elif long_form and parts[-9] == "logs":
-                environment = '/'.join(parts[1:-9])
+                environment = "/".join(parts[1:-9])
             elif parts[-5] == "logs":
-                environment = '/'.join(parts[1:-5])
+                environment = "/".join(parts[1:-5])
             else:
                 environment = None
             if long_form:
@@ -272,7 +275,7 @@ class LogParser:
             if record:
                 # Append interceding lines to latest message
                 if record.end_pos < match.start() - 1:
-                    record.message += lines[record.end_pos:match.start() - 1]
+                    record.message += lines[record.end_pos : match.start() - 1]
                     record.end_pos = match.start() - 1
                 yield record
 
@@ -282,7 +285,7 @@ class LogParser:
         if record:
             # Append remaining lines to last message
             if record.end_pos < len(lines):
-                trailing_lines = lines[record.end_pos:].rstrip('\n')
+                trailing_lines = lines[record.end_pos :].rstrip("\n")
                 record.message += trailing_lines
                 record.end_pos += len(trailing_lines)
             yield record
@@ -297,14 +300,16 @@ def create_example_records():
         "step": "load",
         "event": "finish",
         "target": "schema.example",
-        "elapsed": 21.117434
+        "elapsed": 21.117434,
     }
     # The examples are "old" enough for the corresponding index to be "stale" ... see delete_stale_indices
     examples = """
         2016-06-26 07:52:45,106 EXAMPLE105754649 INFO etl.config (MainThread) [hello.py:89] Starting log ...
         2016-06-26 07:52:59 EXAMPLE105754649 ERROR etl.config (MainThread) [world.py:90] Trouble without millis...
         2016-06-26 07:53:02,107 EXAMPLE105754649 DEBUG etl.monitor (MainThread) [monitor.py:255] Monitor payload = {}
-    """.format(json.dumps(monitor))
+    """.format(
+        json.dumps(monitor)
+    )
     lines = textwrap.dedent(examples)
     parser = LogParser("examples")
     return list(parser.split_log_lines(lines))
