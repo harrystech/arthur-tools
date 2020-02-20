@@ -36,12 +36,10 @@ def _build_meta_doc(context, event_data):
     doc = {
         "lambda_name": context.function_name,
         "lambda_version": context.function_version,
-        "logfile": '/'.join((context.log_group_name, context.log_stream_name)),
+        "logfile": "/".join((context.log_group_name, context.log_stream_name)),
         "log_level": "INFO",
-        "@timestamp": event_data['eventTime'],
-        "context": {
-            "remaining_time_in_millis": context.get_remaining_time_in_millis()
-        }
+        "@timestamp": event_data["eventTime"],
+        "context": {"remaining_time_in_millis": context.get_remaining_time_in_millis()},
     }
     return doc
 
@@ -79,11 +77,14 @@ def lambda_handler(event, context):
         ]
     }
     """
-    for i, event_data in enumerate(event['Records']):
-        bucket_name = event_data['s3']['bucket']['name']
-        object_key = urllib.parse.unquote_plus(event_data['s3']['object']['key'])
-        print("Event #{:d}: source={}, event={}, time={}, bucket={}, key={}".format(
-            i, event_data['eventSource'], event_data['eventName'], event_data['eventTime'], bucket_name, object_key))
+    for i, event_data in enumerate(event["Records"]):
+        bucket_name = event_data["s3"]["bucket"]["name"]
+        object_key = urllib.parse.unquote_plus(event_data["s3"]["object"]["key"])
+        print(
+            "Event #{:d}: source={}, event={}, time={}, bucket={}, key={}".format(
+                i, event_data["eventSource"], event_data["eventName"], event_data["eventTime"], bucket_name, object_key
+            )
+        )
 
         if not (object_key.startswith("_logs/") or "/logs/" in object_key):
             print("Path is not in log folder ... skipping this file")
@@ -101,7 +102,7 @@ def lambda_handler(event, context):
             print("Failed to find records in object '{}'".format(file_uri))
             return
         except botocore.exceptions.ClientError as exc:
-            error_code = exc.response['Error']['Code']
+            error_code = exc.response["Error"]["Code"]
             print("Error code {} for object '{}'".format(error_code, file_uri))
             return
 
@@ -113,7 +114,7 @@ def lambda_handler(event, context):
         sha1_hash.update(file_uri.encode())
         id_ = sha1_hash.hexdigest()
         res = es.index(index=config.log_index(), body=body, id=id_)
-        print("Sent meta information, result: {}, index: {}".format(res['result'], res['_index']))
+        print("Sent meta information, result: {}, index: {}".format(res["result"], res["_index"]))
         print("Time remaining (ms):", context.get_remaining_time_in_millis())
 
 

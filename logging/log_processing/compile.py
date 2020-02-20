@@ -7,8 +7,8 @@ log file posted by the data pipelines is automatically drained into an
 Elasticsearch Service pool. That should quench your thirst for log fluids.
 """
 
-import io
 import gzip
+import io
 import sys
 import urllib.parse
 from functools import partial
@@ -48,10 +48,10 @@ def _load_records_using(content_opener, content_location):
 
 def load_local_content(filename):
     if filename.endswith(".gz"):
-        with gzip.open(filename, 'rb') as f:
+        with gzip.open(filename, "rb") as f:
             lines = f.read().decode()
     else:
-        with open(filename, 'r') as f:
+        with open(filename, "r") as f:
             lines = f.read()
     return lines
 
@@ -60,11 +60,11 @@ def load_remote_content(uri):
     split_result = urllib.parse.urlsplit(uri)
     if split_result.scheme != "s3":
         raise ValueError("scheme {} not supported".format(split_result.scheme))
-    bucket_name, object_key = split_result.netloc, split_result.path.lstrip('/')
+    bucket_name, object_key = split_result.netloc, split_result.path.lstrip("/")
     s3 = boto3.resource("s3")
     bucket = s3.Bucket(bucket_name)
     obj = bucket.Object(object_key)
-    response = obj.get()['Body']
+    response = obj.get()["Body"]
     if object_key.endswith(".gz"):
         stream = io.BytesIO(response.read())
         lines = gzip.GzipFile(fileobj=stream).read().decode()
