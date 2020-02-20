@@ -51,9 +51,9 @@ def invoke_log_parser(function_name, bucket_name, object_key):
     payload = {
         "Records": [
             {
-                "eventTime": datetime.utcnow().isoformat(),
                 "eventName": "ObjectCreated:Put",
                 "eventSource": "aws:s3",
+                "eventTime": datetime.utcnow().isoformat(),
                 "s3": {"bucket": {"name": bucket_name}, "object": {"key": urllib.parse.quote_plus(object_key)}},
             }
         ]
