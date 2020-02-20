@@ -6,8 +6,8 @@ When called by itself, this will run a set of example log lines through the pars
 
 import calendar
 import collections
-import copy
 import datetime
+import copy
 import hashlib
 import json
 import re
