@@ -65,7 +65,7 @@ class JsonFormatter(logging.Formatter):
 
     attribute_mapping = {
         # LogRecord attributes for which we want new names:
-        "filename": "source:filename",
+        "filename": "source.filename",
         "funcName": "source.function",
         "levelname": "log_level",
         "levelno": "log_severity",
