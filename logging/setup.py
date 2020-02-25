@@ -1,6 +1,5 @@
 from setuptools import find_packages, setup
 
-
 setup(
     name="log_processing",
     version="1.5.0",
@@ -13,7 +12,7 @@ setup(
             "show_log_examples = log_processing.parse:main",
             "search_log = log_processing.compile:main",
             "config_log = log_processing.config:main",
-            "upload_log = log_processing.upload:main"
+            "upload_log = log_processing.upload:main",
         ]
-    }
+    },
 )

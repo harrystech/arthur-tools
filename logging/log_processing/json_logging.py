@@ -124,7 +124,14 @@ LOGGING_STREAM_CONFIG = {
         }
     },
     "root": {"level": "INFO", "handlers": ["console"]},
-    "loggers": {"botocore": {"qualname": "botocore", "handlers": ["console"], "level": "WARNING", "propagate": 0}},
+    "loggers": {
+        "botocore": {
+            "qualname": "botocore",
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": 0,
+        }
+    },
 }
 
 

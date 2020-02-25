@@ -57,9 +57,19 @@ class LogRecord(collections.UserDict):
         values = match.groupdict()
         # --- Basic info ---
         self.message = values["message"]
-        self.update({k: v for k, v in values.items() if k in ["etl_id", "log_level", "logger", "thread_name"]})
+        self.update(
+            {
+                k: v
+                for k, v in values.items()
+                if k in ["etl_id", "log_level", "logger", "thread_name"]
+            }
+        )
         self["source_code"] = {k: v for k, v in values.items() if k in ["filename", "line_number"]}
-        self["parser"] = {"start_pos": match.start(), "end_pos": match.end(), "chars": match.end() - match.start()}
+        self["parser"] = {
+            "start_pos": match.start(),
+            "end_pos": match.end(),
+            "chars": match.end() - match.start(),
+        }
         # --- Timestamp (with pseudo-microseconds so that log lines stay sorted in order of logfile) ---
         ts = values["_timestamp"]
         self.__counter[ts] += 1
@@ -67,7 +77,9 @@ class LogRecord(collections.UserDict):
             ts += ",{:06d}".format(self.__counter[ts])  # 04:05:06 -> 04:05:06,000001
         else:
             ts += "{:03d}".format(self.__counter[ts])  # 04:05:06,789 -> 04:05:06,789001
-        timestamp = datetime.datetime.strptime(ts, "%Y-%m-%d %H:%M:%S,%f").replace(tzinfo=datetime.timezone.utc)
+        timestamp = datetime.datetime.strptime(ts, "%Y-%m-%d %H:%M:%S,%f").replace(
+            tzinfo=datetime.timezone.utc
+        )
         self.update(
             {
                 "@timestamp": timestamp.isoformat(),  # Python datetime drops milliseconds if value is 0.
@@ -99,7 +111,9 @@ class LogRecord(collections.UserDict):
                     if k in ["monitor_id", "step", "event", "target", "elapsed"]
                 }
                 if "errors" in monitor_payload:
-                    self["monitor"]["error_codes"] = " ".join(error["code"] for error in monitor_payload["errors"])
+                    self["monitor"]["error_codes"] = " ".join(
+                        error["code"] for error in monitor_payload["errors"]
+                    )
                 if "extra" in monitor_payload and "rowcount" in monitor_payload["extra"]:
                     self["monitor"]["rowcount"] = monitor_payload["extra"]["rowcount"]
 
@@ -209,7 +223,10 @@ class LogParser:
                 environment = None
                 data_pipeline = None
             if environment is not None and data_pipeline[0].startswith("df-"):
-                return environment, dict(zip(["id", "component", "instance", "attempt"], data_pipeline))
+                return (
+                    environment,
+                    dict(zip(["id", "component", "instance", "attempt"], data_pipeline)),
+                )
         return None, {}
 
     def extract_emr_cluster_information(self):
