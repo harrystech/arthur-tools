@@ -58,7 +58,11 @@ def set_es_endpoint(env_type, bucket_name, endpoint):
 
 
 def get_es_endpoint(env_type=None, bucket_name=None):
-    """Get value of SSM parameters based either on the environment or the bucket (which has presumably log files)."""
+    """
+    Get value of SSM parameters based either on the environment or the bucket.
+
+    (The bucket should presumably have log files).
+    """
     if env_type is not None:
         name = ES_ENDPOINT_BY_ENV_TYPE.format(env_type=env_type)
     elif bucket_name is not None:
@@ -77,7 +81,8 @@ def _aws_auth():
     # https://github.com/sam-washington/requests-aws4auth/pull/2
     session = boto3.Session()
     logger.info(
-        f"Retrieving credentials (profile_name={session.profile_name}, region_name={session.region_name})",
+        f"Retrieving credentials "
+        "(profile_name={session.profile_name}, region_name={session.region_name})",
     )
     credentials = session.get_credentials()
     aws4auth = requests_aws4auth.AWS4Auth(
@@ -96,7 +101,9 @@ def _aws_auth():
 
 def connect_to_es(host, port, use_auth=False):
     """
-    Return client. Unless running from authorized IP, set use_auth to True so that credentials are based on role.
+    Return client that's connected to an Elasticsearch cluster.
+
+    Unless running from authorized IP, set use_auth to True so that credentials are based on role.
     """
     if use_auth:
         http_auth = _aws_auth()

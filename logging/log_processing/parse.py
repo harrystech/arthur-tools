@@ -70,7 +70,7 @@ class LogRecord(collections.UserDict):
             "end_pos": match.end(),
             "chars": match.end() - match.start(),
         }
-        # --- Timestamp (with pseudo-microseconds so that log lines stay sorted in order of logfile) ---
+        # Timestamp (with pseudo-microseconds so that log lines stay sorted in order of logfile).
         ts = values["_timestamp"]
         self.__counter[ts] += 1
         if values["_milliseconds"] is None:
@@ -82,7 +82,7 @@ class LogRecord(collections.UserDict):
         )
         self.update(
             {
-                "@timestamp": timestamp.isoformat(),  # Python datetime drops milliseconds if value is 0.
+                "@timestamp": timestamp.isoformat(),  # Python datetime drops milliseconds if 0.
                 "datetime": {
                     "epoch_time_in_millis": calendar.timegm(timestamp.timetuple()) * 1000
                     + timestamp.microsecond // 1000,
@@ -97,7 +97,7 @@ class LogRecord(collections.UserDict):
                 },
             }
         )
-        # --- Monitor payload ---
+        # Monitor payload
         if values["message"].startswith("Monitor payload = "):
             payload_text = values["message"].replace("Monitor payload = ", "", 1)
             try:
@@ -145,7 +145,7 @@ class LogParser:
 
     # Basic Regex to split up Arthur log lines
     _LOG_LINE_REGEX = r"""
-        # Look for timestamp from beginning of line, e.g. 2017-06-09 06:16:19,350 (where msecs are optional)
+        # Look for timestamp at beginning of line, e.g. 2017-06-09 06:16:19,350, with msecs optional
         ^(?P<_timestamp>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}(?:,(?P<_milliseconds>\d{3}))?)\s
         # Look for ETL id, e.g. CD58E5D3C73E4D45
         (?P<etl_id>[0-9A-Z]{16})\s

@@ -18,7 +18,7 @@ import elasticsearch.helpers
 
 from log_processing import compile, config, json_logging, parse
 
-# This is done during module initialization so that it is done once for a Lambda runtime environment.
+# This is done during module initialization so that it is done once for the Lambda runtime.
 json_logging.configure_logging()
 logger = json_logging.getLogger(__name__)
 
