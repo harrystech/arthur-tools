@@ -203,7 +203,7 @@ class LogParser:
         '<prefix>/4'
         >>> lp.shared_info["data_pipeline"]["id"]
         'df-<id>'
-        """  # noqa Allow long lines for the examples
+        """  # noqa:E501 Allow long lines for the examples
         parts = self.shared_info["logfile"].replace("s3://", "", 1).split("/")
         if len(parts) >= 8:
             if parts[1] == "_logs":
@@ -258,7 +258,7 @@ class LogParser:
         '<prefix>/4'
         >>> lp.shared_info["emr_cluster"]["id"]
         'j-<id>'
-        """  # noqa Allow long lines for the examples
+        """  # noqa:E501 Allow long lines for the examples
         parts = self.shared_info["logfile"].replace("s3://", "", 1).split("/")
         if len(parts) >= 7 and parts[-3] == "steps":
             long_form = len(parts) >= 11 and parts[-4] == "hadoop"
@@ -323,7 +323,7 @@ def create_example_records():
         2016-06-26 07:52:45,106 EXAMPLE105754649 INFO etl.config (MainThread) [hello.py:89] Starting log ...
         2016-06-26 07:52:59 EXAMPLE105754649 ERROR etl.config (MainThread) [world.py:90] Trouble without millis...
         2016-06-26 07:53:02,107 EXAMPLE105754649 DEBUG etl.monitor (MainThread) [monitor.py:255] Monitor payload = {}
-    """  # noqa Leave long log lines on one line
+    """  # noqa:E501 Leave long log lines on one line
 
     # The examples are "old" enough for the corresponding index to be "stale".
     # (Use delete_stale_indices to get rid of the examples after uploading them to an ES cluster.)
