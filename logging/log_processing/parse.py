@@ -178,7 +178,7 @@ class LogParser:
 
     def extract_data_pipeline_information(self):
         """
-        Return information related to a data pipeline if it is contained in the filename of the logfile.
+        Extract information related to a data pipeline from the filename of the logfile.
 
         The examples below have "<prefix>/{number}" as an environment to make them easier to distinguish.
         >>> lp = LogParser("s3://<bucket>/_logs/<prefix>/1/df-<id>/<component>/<instance>/<attempt>/<cluster_id>/"
@@ -203,7 +203,7 @@ class LogParser:
         '<prefix>/4'
         >>> lp.shared_info["data_pipeline"]["id"]
         'df-<id>'
-        """
+        """  # noqa Allow long lines for the examples
         parts = self.shared_info["logfile"].replace("s3://", "", 1).split("/")
         if len(parts) >= 8:
             if parts[1] == "_logs":
@@ -231,7 +231,7 @@ class LogParser:
 
     def extract_emr_cluster_information(self):
         """
-        Return information related to an EMR cluster if it is contained in the filename of the logfile.
+        Extract information related to an EMR cluster from the filename of the logfile.
 
         Basically extract from:
         >>> lp = LogParser("s3://<bucket>/_logs/<prefix>/1/j-<id>/node/<node_id>/applications/hadoop/"
@@ -258,7 +258,7 @@ class LogParser:
         '<prefix>/4'
         >>> lp.shared_info["emr_cluster"]["id"]
         'j-<id>'
-        """
+        """  # noqa Allow long lines for the examples
         parts = self.shared_info["logfile"].replace("s3://", "", 1).split("/")
         if len(parts) >= 7 and parts[-3] == "steps":
             long_form = len(parts) >= 11 and parts[-4] == "hadoop"
@@ -319,14 +319,15 @@ def create_example_records():
         "target": "schema.example",
         "elapsed": 21.117434,
     }
-    # The examples are "old" enough for the corresponding index to be "stale" ... see delete_stale_indices
-    examples = """
+    log_lines = """
         2016-06-26 07:52:45,106 EXAMPLE105754649 INFO etl.config (MainThread) [hello.py:89] Starting log ...
         2016-06-26 07:52:59 EXAMPLE105754649 ERROR etl.config (MainThread) [world.py:90] Trouble without millis...
         2016-06-26 07:53:02,107 EXAMPLE105754649 DEBUG etl.monitor (MainThread) [monitor.py:255] Monitor payload = {}
-    """.format(
-        json.dumps(monitor)
-    )
+    """  # noqa Leave long log lines on one line
+
+    # The examples are "old" enough for the corresponding index to be "stale".
+    # (Use delete_stale_indices to get rid of the examples after uploading them to an ES cluster.)
+    examples = log_lines.format(json.dumps(monitor))
     lines = textwrap.dedent(examples)
     parser = LogParser("examples")
     return list(parser.split_log_lines(lines))
