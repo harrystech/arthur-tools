@@ -51,12 +51,18 @@ def set_es_endpoint(env_type, bucket_name, endpoint):
             Overwrite=True,
         )
         client.add_tags_to_resource(
-            ResourceType="Parameter", ResourceId=name, Tags=[{"Key": "user:project", "Value": "data-warehouse"}]
+            ResourceType="Parameter",
+            ResourceId=name,
+            Tags=[{"Key": "user:project", "Value": "data-warehouse"}],
         )
 
 
 def get_es_endpoint(env_type=None, bucket_name=None):
-    """Get value of SSM parameters based either on the environment or the bucket (which has presumably log files)."""
+    """
+    Get value of SSM parameters based either on the environment or the bucket.
+
+    (The bucket should presumably have log files).
+    """
     if env_type is not None:
         name = ES_ENDPOINT_BY_ENV_TYPE.format(env_type=env_type)
     elif bucket_name is not None:
@@ -74,10 +80,17 @@ def get_es_endpoint(env_type=None, bucket_name=None):
 def _aws_auth():
     # https://github.com/sam-washington/requests-aws4auth/pull/2
     session = boto3.Session()
-    logger.info(f"Retrieving credentials (profile_name={session.profile_name}, region_name={session.region_name})",)
+    logger.info(
+        f"Retrieving credentials "
+        "(profile_name={session.profile_name}, region_name={session.region_name})",
+    )
     credentials = session.get_credentials()
     aws4auth = requests_aws4auth.AWS4Auth(
-        credentials.access_key, credentials.secret_key, session.region_name, "es", session_token=credentials.token
+        credentials.access_key,
+        credentials.secret_key,
+        session.region_name,
+        "es",
+        session_token=credentials.token,
     )
 
     def wrapped_aws4auth(request):
@@ -88,7 +101,9 @@ def _aws_auth():
 
 def connect_to_es(host, port, use_auth=False):
     """
-    Return client. Unless running from authorized IP, set use_auth to True so that credentials are based on role.
+    Return client that's connected to an Elasticsearch cluster.
+
+    Unless running from authorized IP, set use_auth to True so that credentials are based on role.
     """
     if use_auth:
         http_auth = _aws_auth()
@@ -131,7 +146,10 @@ def get_current_indices(client):
 def get_allowable_indices():
     """Return set of indices expected in use given our retention period."""
     today = datetime.datetime.utcnow()
-    return frozenset(get_index_name(today - datetime.timedelta(days=days)) for days in range(0, OLDEST_INDEX_IN_DAYS))
+    return frozenset(
+        get_index_name(today - datetime.timedelta(days=days))
+        for days in range(0, OLDEST_INDEX_IN_DAYS)
+    )
 
 
 def build_parser():
@@ -143,22 +161,34 @@ def build_parser():
     get_config_parser.add_argument("env_type", help="environment type (like 'dev' or 'prod')")
     get_config_parser.set_defaults(func=sub_get_endpoint)
     # Set new configuration
-    set_config_parser = subparsers.add_parser("set_endpoint", help="set endpoint for env type and bucket")
+    set_config_parser = subparsers.add_parser(
+        "set_endpoint", help="set endpoint for env type and bucket"
+    )
     set_config_parser.add_argument("env_type", help="environment type (like 'dev' or 'prod')")
     set_config_parser.add_argument("bucket_name", help="name of S3 bucket with log files")
-    set_config_parser.add_argument("endpoint", help="endpoint for Elasticsearch service (host:port)")
+    set_config_parser.add_argument(
+        "endpoint", help="endpoint for Elasticsearch service (host:port)"
+    )
     set_config_parser.set_defaults(func=sub_set_endpoint)
     # Upload (new) index template
-    put_index_template_parser = subparsers.add_parser("put_index_template", help="upload (new) index template")
-    put_index_template_parser.add_argument("env_type", help="environment type (like 'dev' or 'prod')")
+    put_index_template_parser = subparsers.add_parser(
+        "put_index_template", help="upload (new) index template"
+    )
+    put_index_template_parser.add_argument(
+        "env_type", help="environment type (like 'dev' or 'prod')"
+    )
     put_index_template_parser.set_defaults(func=sub_put_index_template)
     # Get list of current indices matching our pattern
     get_indices_parser = subparsers.add_parser("get_indices", help="get current indices")
     get_indices_parser.add_argument("env_type", help="environment type (like 'dev' or 'prod')")
     get_indices_parser.set_defaults(func=sub_get_indices)
     # Delete indices for records older than a year
-    delete_stale_indices_parser = subparsers.add_parser("delete_stale_indices", help="delete older indices")
-    delete_stale_indices_parser.add_argument("env_type", help="environment type (like 'dev' or 'prod')")
+    delete_stale_indices_parser = subparsers.add_parser(
+        "delete_stale_indices", help="delete older indices"
+    )
+    delete_stale_indices_parser.add_argument(
+        "env_type", help="environment type (like 'dev' or 'prod')"
+    )
     delete_stale_indices_parser.set_defaults(func=sub_delete_stale_indices)
     return parser
 

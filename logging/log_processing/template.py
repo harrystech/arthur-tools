@@ -11,7 +11,10 @@ LOG_RECORD_PROPERTIES = {
         }
     },
     "emr_cluster": {"properties": {"id": {"type": "keyword"}, "step_id": {"type": "keyword"}}},
-    "@timestamp": {"type": "date", "format": "strict_date_optional_time"},  # generic ISO datetime parser
+    "@timestamp": {
+        "type": "date",
+        "format": "strict_date_optional_time",
+    },  # generic ISO datetime parser
     "datetime": {
         "properties": {
             "epoch_time_in_millis": {"type": "long"},
@@ -29,7 +32,9 @@ LOG_RECORD_PROPERTIES = {
     "log_level": {"type": "keyword"},
     "logger": {"type": "text", "analyzer": "simple", "fields": {"name": {"type": "keyword"}}},
     "thread_name": {"type": "keyword"},
-    "source_code": {"properties": {"filename": {"type": "text"}, "line_number": {"type": "integer"}}},
+    "source_code": {
+        "properties": {"filename": {"type": "text"}, "line_number": {"type": "integer"}}
+    },
     "message": {
         "type": "text",
         "analyzer": "standard",
@@ -46,5 +51,11 @@ LOG_RECORD_PROPERTIES = {
             "error_codes": {"type": "text"},
         }
     },
-    "parser": {"properties": {"start_pos": {"type": "long"}, "end_pos": {"type": "long"}, "chars": {"type": "long"}}},
+    "parser": {
+        "properties": {
+            "start_pos": {"type": "long"},
+            "end_pos": {"type": "long"},
+            "chars": {"type": "long"},
+        }
+    },
 }

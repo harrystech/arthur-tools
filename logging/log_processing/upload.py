@@ -18,7 +18,7 @@ import elasticsearch.helpers
 
 from log_processing import compile, config, json_logging, parse
 
-# This is done during module initialization so that it is done once for a Lambda runtime environment.
+# This is done during module initialization so that it is done once for the Lambda runtime.
 json_logging.configure_logging()
 logger = json_logging.getLogger(__name__)
 
@@ -37,7 +37,9 @@ def index_records(es, records_generator):
     """
     Bulk-index log records. The appropriate index is chosen given the date of the log record.
     """
-    for date, records in itertools.groupby(records_generator, key=lambda rec: rec["datetime"]["date"]):
+    for date, records in itertools.groupby(
+        records_generator, key=lambda rec: rec["datetime"]["date"]
+    ):
         index = config.get_index_name(date)
         n_errors = 0
         n_ok, errors = elasticsearch.helpers.bulk(es, _build_actions_from(index, records))
@@ -74,7 +76,9 @@ def lambda_handler(event, context):
     )
     for i, event_data in enumerate(event["Records"]):
         logger.info(
-            "Event #{i}: source={eventSource}, name={eventName}, time={eventTime}".format(i=i, **event_data),
+            "Event #{i}: source={eventSource}, name={eventName}, time={eventTime}".format(
+                i=i, **event_data
+            ),
             extra={
                 "event.source": event_data["eventSource"],
                 "event.name": event_data["eventName"],

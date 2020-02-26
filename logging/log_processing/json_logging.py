@@ -58,7 +58,8 @@ class JsonFormatter(logging.Formatter):
         * The timestamps are in UTC.
     """
 
-    # This format is compatible with "strict_date_time" in Elasticsearch (yyyy-MM-dd'T'HH:mm:ss.SSSZZ).
+    # This format is compatible with "strict_date_time" in Elasticsearch:
+    # yyyy-MM-dd'T'HH:mm:ss.SSSZZ
     converter = time.gmtime
     default_time_format = "%Y-%m-%dT%H:%M:%SZ"
     default_msec_format = "%.19s.%03dZ"
@@ -101,14 +102,16 @@ class JsonFormatter(logging.Formatter):
                     data[new_name] = value
             else:
                 data[attr] = value
-        # The "message" is added last so an accidentally specified message in the extra kwargs is ignored.
+        # The "message" is added last so an accidentally specified message in the extra kwargs is
+        # ignored.
         data["message"] = record.getMessage()
         # Finally, always add a timestamp.
         data["gmtime"] = self.formatTime(record)
         return json.dumps(data, separators=(",", ":"), sort_keys=True)
 
 
-# We don't create the config dict until here so that we can use the classes (instead of class names in strings).
+# We don't create the config dict until here so that we can use the classes
+# (instead of class names in strings).
 LOGGING_STREAM_CONFIG = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -124,7 +127,14 @@ LOGGING_STREAM_CONFIG = {
         }
     },
     "root": {"level": "INFO", "handlers": ["console"]},
-    "loggers": {"botocore": {"qualname": "botocore", "handlers": ["console"], "level": "WARNING", "propagate": 0}},
+    "loggers": {
+        "botocore": {
+            "qualname": "botocore",
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": 0,
+        }
+    },
 }
 
 
