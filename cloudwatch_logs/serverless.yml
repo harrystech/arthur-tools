@@ -1,4 +1,4 @@
-service: DE-Cloudwatch-Logs-to-Elasticsearch
+service: Cloudwatch-Logs-to-Elasticsearch
 
 plugins:
   - serverless-pseudo-parameters

@@ -1,4 +1,3 @@
-
 #### Current Log Structure:
 Currently using the following common set of fields across applications/lambdas:
 
