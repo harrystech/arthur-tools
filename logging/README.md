@@ -32,17 +32,17 @@ See also [How to control access].
 
 In order to run this code locally or to upload it as a lambda function, you have to have a
 virtual environment set up:
-```shell
+```bash
 ../bin/update_virtual_env.sh venv
 ```
 
 To deploy the lambda function, create a package
-```shell
+```bash
 ../bin/create_deployment_package.sh venv
 ```
 
 You need to upload the latest package to S3 in order to use it in the CloudFormation step:
-```shell
+```bash
 aws s3 sync --exclude '*' --include 'log_processing_*.zip' ./ s3://YOUR_CODE_BUCKET/_lambda/
 ```
 
@@ -52,7 +52,7 @@ You can use the included [`dw\_es\_domain.yaml`](./dw_es_domain.yaml) file
 to bring up a ES domain along with a Lambda function to load log files.
 
 For example:
-```shell
+```bash
 ../bin/do_cloudformation.sh create dw_es_domain dev \
     DomainName="dw-es-dev" \
     CodeS3Bucket="<your code bucket>" CodeS3Key="<your latest zip file>" \
@@ -62,7 +62,7 @@ For example:
 Replace the IP address with your actual office IP address.
 
 If you need to update the stack, e.g. to update the Lambda handler, modify this line appropriately:
-```shell
+```bash
 ../bin/do_cloudformation.sh update dw_es_domain dev \
     DomainName=UsePreviousValue \
     CodeS3Bucket=UsePreviousValue CodeS3Key=UsePreviousValue \
@@ -73,7 +73,7 @@ Remember that once you have set an optional parameter, you have to at least pass
 with `=UserPreviousValue` or it reverts to its default.
 
 Finally, to delete the stack, run:
-```shell
+```bash
 ../bin/do_cloudformation.sh delete dw_es_domain dev
 ```
 
@@ -109,7 +109,7 @@ and save it as `notification.json`:
 }
 ```
 
-```shell
+```bash
 aws s3api put-bucket-notification-configuration \
     --bucket "<your bucket>" \
     --notification-configuration file://notification.json
@@ -123,7 +123,7 @@ notification configuration will be replaced.
 Need to pass in the "environment type" which comes from the VPC, like `dev`.
 Sets endpoint for env and also for bucket (so that lambda can use it).
 
-```shell
+```bash
 config_log set_endpoint dev "your bucket" "your endpoint:443"
 config_log get_endpoint dev
 ```
@@ -133,7 +133,7 @@ The endpoint that is used here can be found as an output of the CloudFormation s
 
 If you need to update the index template:
 
-```shell
+```bash
 config_log put_index_template dev
 ```
 The template will be automatically set by the lambda handler with the first call.
@@ -143,7 +143,7 @@ The template will be automatically set by the lambda handler with the first call
 You can review the existing indices and automatically delete those older than about one
 year. (The command will stop to ask for confirmation before actually deleting indices.)
 
-```shell
+```bash
 config_log get_indices dev
 config_log delete_stale_indices dev
 ```
@@ -169,7 +169,7 @@ The individual steps (parsing, compiling, uploading) can be tested locally.
 ## Parsing example log lines
 
 You should be able to run the self-test of the parser:
-```shell
+```bash
 show_log_examples
 ```
 
@@ -179,7 +179,7 @@ In order to test the basic functionality or as a quick check across a number of 
 you can "search" files which will search against the ETL ID, log level and message of every log record.
 
 Examples:
-```shell
+```bash
 # built-in examples
 search_log ERROR examples
 # local files (after you copied some logs from your Arthur run directory)
@@ -194,7 +194,7 @@ You need to pass in the "environment type" which comes from the VPC, like `dev`,
 so that the endpoint address can be looked up in the parameter store.
 
 Example:
-```shell
+```bash
 # built-in examples
 upload_log dev examples
 # local files (after you copied some logs from your Arthur run directory)
@@ -208,7 +208,12 @@ upload_log dev s3://example/logs/df-pipeline-id/component/instance/attempt/StdEr
 In case you find yourself already having log files that are in the bucket but not indexed,
 then you can run the following script to invoke the lambda function:
 
-```shell
-./backfill_logfiles.py "<bucket_name>" "<prefix>" "<function_name>"
+```bash
+./backfill_logfiles.py "<bucket_name>" "<function_name>"
 ```
 Where `<function_name>` may simply be copied from the _Outputs_ section of the CloudFormation stack information.
+
+Check the usage information of the backfill script to see how you can limit which objects are uploaded:
+```bash
+./backfill_logfiles.py --help
+```

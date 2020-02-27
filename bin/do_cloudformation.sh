@@ -33,7 +33,7 @@ echo "Trying to \"$CF_VERB\" a \"$CF_OBJECT\" within stack \"$STACK_NAME\"..."
 
 BINDIR=`dirname $0`
 FOUND=no
-TEMPLATE_DIRS=". ./cloudformation $BINDIR"
+TEMPLATE_DIRS=". ./cloudformation ../cloudformation $BINDIR"
 for TEMP_DIR in $TEMPLATE_DIRS; do
     TEMPLATE_FILE="$TEMP_DIR/$CF_OBJECT.yaml"
     if [[ -r "$TEMPLATE_FILE" ]]; then

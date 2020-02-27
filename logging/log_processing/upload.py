@@ -8,7 +8,6 @@ As a lambda handler, extract the new file in S3 from the event information,
 parse that file and send it to ES domain.
 """
 
-import hashlib
 import itertools
 import sys
 import urllib.parse
@@ -17,13 +16,15 @@ import botocore.exceptions
 import elasticsearch
 import elasticsearch.helpers
 
-from log_processing import compile, config, parse
+from log_processing import compile, config, json_logging, parse
+
+# This is done during module initialization so that it is done once for the Lambda runtime.
+json_logging.configure_logging()
+logger = json_logging.getLogger(__name__)
 
 
 def _build_actions_from(index, records):
     for record in records:
-        if record["logfile"] == "examples":
-            print("Example record ... _id={0.id_} timestamp={0[@timestamp]}".format(record))
         yield {
             "_op_type": "index",
             "_index": index,
@@ -32,32 +33,20 @@ def _build_actions_from(index, records):
         }
 
 
-def _build_meta_doc(context, event_data):
-    doc = {
-        "lambda_name": context.function_name,
-        "lambda_version": context.function_version,
-        "logfile": '/'.join((context.log_group_name, context.log_stream_name)),
-        "log_level": "INFO",
-        "@timestamp": event_data['eventTime'],
-        "context": {
-            "remaining_time_in_millis": context.get_remaining_time_in_millis()
-        }
-    }
-    return doc
-
-
 def index_records(es, records_generator):
-    n_ok, n_errors = 0, 0
-    for date, records in itertools.groupby(records_generator, key=lambda rec: rec["datetime"]["date"]):
-        index = config.log_index(date)
-        print("Indexing records into '{}'".format(index))
-        ok, errors = elasticsearch.helpers.bulk(es, _build_actions_from(index, records))
-        n_ok += ok
+    """
+    Bulk-index log records. The appropriate index is chosen given the date of the log record.
+    """
+    for date, records in itertools.groupby(
+        records_generator, key=lambda rec: rec["datetime"]["date"]
+    ):
+        index = config.get_index_name(date)
+        n_errors = 0
+        n_ok, errors = elasticsearch.helpers.bulk(es, _build_actions_from(index, records))
         if errors:
-            print("Errors: {}".format(errors))
-            n_errors += len(errors)
-    print("Indexed successfully: {:d}, unsuccessfully: {:d}".format(n_ok, n_errors))
-    return n_ok, n_errors
+            logger.warning(f"Index errors: {errors}")
+            n_errors = len(errors)
+        logger.info(f"Indexed successfully={n_ok:d}, unsuccessfully={n_errors:d}, index={index}")
 
 
 def lambda_handler(event, context):
@@ -79,42 +68,53 @@ def lambda_handler(event, context):
         ]
     }
     """
-    for i, event_data in enumerate(event['Records']):
-        bucket_name = event_data['s3']['bucket']['name']
-        object_key = urllib.parse.unquote_plus(event_data['s3']['object']['key'])
-        print("Event #{:d}: source={}, event={}, time={}, bucket={}, key={}".format(
-            i, event_data['eventSource'], event_data['eventName'], event_data['eventTime'], bucket_name, object_key))
-
-        if not (object_key.startswith("_logs/") or "/logs/" in object_key):
-            print("Path is not in log folder ... skipping this file")
-            return
+    json_logging.update_context(
+        aws_request_id=context.aws_request_id,
+        function_name=context.function_name,
+        function_version=context.function_version,
+        log_stream_name=context.log_stream_name,
+    )
+    for i, event_data in enumerate(event["Records"]):
+        logger.info(
+            "Event #{i}: source={eventSource}, name={eventName}, time={eventTime}".format(
+                i=i, **event_data
+            ),
+            extra={
+                "event.source": event_data["eventSource"],
+                "event.name": event_data["eventName"],
+                "event.time": event_data["eventTime"],
+            },
+        )
+        bucket_name = event_data["s3"]["bucket"]["name"]
+        object_key = urllib.parse.unquote_plus(event_data["s3"]["object"]["key"])
+        is_log_file = object_key.startswith("_logs/") or "/logs/" in object_key
+        logger.info(f"Bucket={bucket_name}, object={object_key}, is_log_file={is_log_file}")
+        if not is_log_file:
+            continue
 
         file_uri = "s3://{}/{}".format(bucket_name, object_key)
+        processed = compile.load_records([file_uri])
+
         try:
             host, port = config.get_es_endpoint(bucket_name=bucket_name)
             es = config.connect_to_es(host, port, use_auth=True)
             if not config.exists_index_template(es):
                 config.put_index_template(es)
-            processed = compile.load_remote_records(file_uri)
-            ok, errors = index_records(es, processed)
-        except parse.NoRecordsFoundError:
-            print("Failed to find records in object '{}'".format(file_uri))
-            return
         except botocore.exceptions.ClientError as exc:
-            error_code = exc.response['Error']['Code']
-            print("Error code {} for object '{}'".format(error_code, file_uri))
-            return
+            logger.warning(f"Failed in initial connection: {exc!s}")
+            continue
 
-        body = _build_meta_doc(context, event_data)
-        body["message"] = "Index result for '{}': ok = {}, errors = {}".format(file_uri, ok, errors)
-        body["original_logfile"] = file_uri
+        try:
+            index_records(es, processed)
+        except parse.NoRecordsFoundError:
+            logger.info("Failed to find log records in object '{}'".format(file_uri))
+            continue
+        except botocore.exceptions.ClientError as exc:
+            error_code = exc.response["Error"]["Code"]
+            logger.warning(f"Error code {error_code} for object '{file_uri}'")
+            continue
 
-        sha1_hash = hashlib.sha1()
-        sha1_hash.update(file_uri.encode())
-        id_ = sha1_hash.hexdigest()
-        res = es.index(index=config.log_index(), body=body, id=id_)
-        print("Sent meta information, result: {}, index: {}".format(res['result'], res['_index']))
-        print("Time remaining (ms):", context.get_remaining_time_in_millis())
+        logger.info("Indexed log records successfully.", extra={"log_file_uri": file_uri})
 
 
 def main():
