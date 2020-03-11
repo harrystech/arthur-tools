@@ -5,7 +5,6 @@ Access to shared settings and managing indices
 import argparse
 import datetime
 import logging
-import sys
 import time
 from functools import lru_cache
 
