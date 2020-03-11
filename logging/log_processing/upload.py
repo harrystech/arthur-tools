@@ -9,6 +9,7 @@ parse that file and send it to ES domain.
 """
 
 import itertools
+import logging
 import sys
 import urllib.parse
 
@@ -33,7 +34,7 @@ def _build_actions_from(index, records):
         }
 
 
-def index_records(es, records_generator):
+def index_records(es, records_generator, index_logger):
     """
     Bulk-index log records. The appropriate index is chosen given the date of the log record.
     """
@@ -44,9 +45,11 @@ def index_records(es, records_generator):
         n_errors = 0
         n_ok, errors = elasticsearch.helpers.bulk(es, _build_actions_from(index, records))
         if errors:
-            logger.warning(f"Index errors: {errors}")
+            index_logger.warning(f"Index errors: {errors}")
             n_errors = len(errors)
-        logger.info(f"Indexed successfully={n_ok:d}, unsuccessfully={n_errors:d}, index={index}")
+        index_logger.info(
+            f"Indexed successfully={n_ok:d}, unsuccessfully={n_errors:d}, index={index}"
+        )
 
 
 def lambda_handler(event, context):
@@ -75,8 +78,12 @@ def lambda_handler(event, context):
         log_stream_name=context.log_stream_name,
     )
     for i, event_data in enumerate(event["Records"]):
-        logger.info(
-            "Event #{i}: source={eventSource}, name={eventName}, time={eventTime}".format(
+        bucket_name = event_data["s3"]["bucket"]["name"]
+        object_key = urllib.parse.unquote_plus(event_data["s3"]["object"]["key"])
+        file_uri = f"s3://{bucket_name}/{object_key}"
+        event_logger = logging.LoggerAdapter(logger, extra={"file_uri": file_uri})
+        event_logger.info(
+            "Processing event: index={i}, source={eventSource}, name={eventName}, time={eventTime}".format(
                 i=i, **event_data
             ),
             extra={
@@ -85,36 +92,35 @@ def lambda_handler(event, context):
                 "event.time": event_data["eventTime"],
             },
         )
-        bucket_name = event_data["s3"]["bucket"]["name"]
-        object_key = urllib.parse.unquote_plus(event_data["s3"]["object"]["key"])
-        is_log_file = object_key.startswith("_logs/") or "/logs/" in object_key
-        logger.info(f"Bucket={bucket_name}, object={object_key}, is_log_file={is_log_file}")
-        if not is_log_file:
+        if not (
+            (object_key.startswith("_logs/") or "/logs/" in object_key)
+            and object_key.endswith(("StdError.gz", "stderr.gz"))
+        ):
+            event_logger.info(f"Object is not a log file.")
             continue
 
-        file_uri = "s3://{}/{}".format(bucket_name, object_key)
         processed = compile.load_records([file_uri])
-
         try:
             host, port = config.get_es_endpoint(bucket_name=bucket_name)
             es = config.connect_to_es(host, port, use_auth=True)
             if not config.exists_index_template(es):
                 config.put_index_template(es)
         except botocore.exceptions.ClientError as exc:
-            logger.warning(f"Failed in initial connection: {exc!s}")
-            continue
+            event_logger.exception(f"Failed in initial connection: {exc!s}")
+            # Let the lambda crash and try again later.
+            raise
 
         try:
-            index_records(es, processed)
+            index_records(es, processed, event_logger)
         except parse.NoRecordsFoundError:
-            logger.info("Failed to find log records in object '{}'".format(file_uri))
+            event_logger.info("Failed to find log records in object '{}'".format(file_uri))
             continue
         except botocore.exceptions.ClientError as exc:
             error_code = exc.response["Error"]["Code"]
-            logger.warning(f"Error code {error_code} for object '{file_uri}'")
+            event_logger.warning(f"Error code {error_code} for object '{file_uri}'")
             continue
 
-        logger.info("Indexed log records successfully.", extra={"log_file_uri": file_uri})
+        event_logger.info("Indexed log records successfully.", extra={"log_file_uri": file_uri})
 
 
 def main():
@@ -125,7 +131,7 @@ def main():
     processed = compile.load_records(sys.argv[2:])
     host, port = config.get_es_endpoint(env_type=env_type)
     es = config.connect_to_es(host, port)
-    index_records(es, processed)
+    index_records(es, processed, logger)
 
 
 if __name__ == "__main__":
