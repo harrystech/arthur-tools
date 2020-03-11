@@ -139,7 +139,7 @@ LOGGING_STREAM_CONFIG = {
             "handlers": ["console"],
             "level": "WARNING",
             "propagate": 0,
-        }
+        },
     },
 }
 

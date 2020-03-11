@@ -78,12 +78,14 @@ def lambda_handler(event, context):
         log_stream_name=context.log_stream_name,
     )
     for i, event_data in enumerate(event["Records"]):
+        event_logger = logging.LoggerAdapter(
+            logger, extra={"event_id": f"{context.aws_request_id}.{i}"}
+        )
         bucket_name = event_data["s3"]["bucket"]["name"]
         object_key = urllib.parse.unquote_plus(event_data["s3"]["object"]["key"])
-        file_uri = f"s3://{bucket_name}/{object_key}"
-        event_logger = logging.LoggerAdapter(logger, extra={"file_uri": file_uri})
         event_logger.info(
-            "Processing event: index={i}, source={eventSource}, name={eventName}, time={eventTime}".format(
+            "Processing event: "
+            "index={i}, source={eventSource}, name={eventName}, time={eventTime}".format(
                 i=i, **event_data
             ),
             extra={
@@ -92,12 +94,14 @@ def lambda_handler(event, context):
                 "event.time": event_data["eventTime"],
             },
         )
+        file_uri = f"s3://{bucket_name}/{object_key}"
         if not (
             (object_key.startswith("_logs/") or "/logs/" in object_key)
             and object_key.endswith(("StdError.gz", "stderr.gz"))
         ):
-            event_logger.info(f"Object is not a log file.")
+            event_logger.info(f"Object is not a log file: {file_uri}")
             continue
+        event_logger.info(f"Looking for log records in {file_uri}")
 
         processed = compile.load_records([file_uri])
         try:
