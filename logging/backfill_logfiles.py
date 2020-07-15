@@ -14,7 +14,6 @@ import urllib.parse
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from functools import partial
-from operator import itemgetter
 
 import boto3
 
@@ -34,13 +33,11 @@ def list_objects(bucket_name, prefix, days_in_past_limit):
     logging.info("Looking for objects that may contain logs...")
     for response in response_iterator:
         for info in response["Contents"]:
-            # Arthur always logs to the error channel.
-            if info["Key"].endswith(("StdError.gz", "stderr.gz")) and 'containers/application' not in info["Key"]:
-                if info["LastModified"] > earliest:
-                    yield (info["Key"], info["LastModified"])
+            if info["LastModified"] > earliest:
+                yield info["Key"], info["LastModified"]
 
 
-def invoke_log_parser(function_name, bucket_name, object_key):
+def invoke_log_parser(function_name, bucket_name, object_key, event_time=datetime.utcnow().isoformat()):
     """
     Invoke the Lambda function specified by its name or ARN.
 
@@ -53,7 +50,7 @@ def invoke_log_parser(function_name, bucket_name, object_key):
             {
                 "eventName": "ObjectCreated:Put",
                 "eventSource": "aws:s3",
-                "eventTime": datetime.utcnow().isoformat(),
+                "eventTime": event_time.isoformat(),
                 "s3": {"bucket": {"name": bucket_name}, "object": {"key": urllib.parse.quote_plus(object_key)}},
             }
         ]
@@ -83,7 +80,7 @@ def main(bucket, prefix, function_name, days_in_past_limit, max_threads):
     logging.info("Attempting to load log files from bucket={} using function={}".format(bucket, function_name))
     logging.info("Arguments that limit objects: prefix={}, days_limit={}".format(prefix, days_in_past_limit))
     objects = list_objects(bucket, prefix, days_in_past_limit)
-    object_keys = list(map(itemgetter(0), sorted(objects, key=itemgetter(1), reverse=True)))
+    object_keys = list(objects)  # list(map(itemgetter(0), sorted(objects, key=itemgetter(1), reverse=True)))
     logging.info("Found {} object(s) to process".format(len(object_keys)))
 
     threads = min(len(object_keys), max_threads)
@@ -98,10 +95,10 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
         description="Backfill Elasticsearch cluster using log files from the given bucket using the given lambda."
-        " (Tip: To load just one file, specify it as the prefix.)"
+                    " (Tip: To load just one file, specify it as the prefix.)"
     )
     parser.add_argument(
-        "--prefix", default="_logs", help="Limit objects to those with the given prefix (default: %(default)s)"
+        "prefix", help="Limit objects to those with the given prefix"
     )
     parser.add_argument(
         "--days-limit",
@@ -112,6 +109,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--threads", type=int, default=10, help="Number of threads to use")
     parser.add_argument("bucket", help="Name of bucket in S3")
+    parser.add_argument("prefix", help="Limit objects to those with the given prefix")
     parser.add_argument("lambda_arn", help="ARN of Lambda that can process log files")
     args = parser.parse_args()
 
