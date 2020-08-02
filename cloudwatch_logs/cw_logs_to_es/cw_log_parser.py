@@ -22,7 +22,11 @@ class CloudWatchLogsParser:
             # delete bane of logs  since we already captured it as msg_str
             del event["message"]
             # for now we'll discard aws lambda usage logs
-            if msg_str.startswith("START Requ") or msg_str.startswith("END Requ") or msg_str.startswith("REPORT Requ"):
+            if (
+                msg_str.startswith("START Requ")
+                or msg_str.startswith("END Requ")
+                or msg_str.startswith("REPORT Requ")
+            ):
                 continue
 
             source = {}
@@ -57,7 +61,9 @@ class CloudWatchLogsParser:
     def parse_dirty_json(self, dirty_json_str: str) -> dict:
         parsed_json = {}
         payload_str: str = dirty_json_str.replace("{", ", ").replace("}", ", ").replace("\n", "")
-        payload_str = payload_str.replace("\\", "").replace('"', "").replace("\\s", "").replace("\n", "")
+        payload_str = (
+            payload_str.replace("\\", "").replace('"', "").replace("\\s", "").replace("\n", "")
+        )
         self.log.debug(f"PAYLOAD STR: {payload_str}")
         pairs = payload_str.split(", ")
 
