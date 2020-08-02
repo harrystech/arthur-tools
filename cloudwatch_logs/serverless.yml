@@ -1,4 +1,4 @@
-service: Cloudwatch-Logs-to-Elasticsearch
+service: CloudWatch-Logs-to-Elasticsearch
 
 plugins:
   - serverless-pseudo-parameters
@@ -45,8 +45,8 @@ functions:
 
   LogsToElasticSearch:
     handler: lambda_handler.process
-    memorySize: 512  # optional, in MB, default is 1024
-    timeout: 360  # optional, in seconds, default is 6
+    memorySize: 512  # in MB
+    timeout: 360  # in seconds
     events:
       - cloudwatchLog:
           logGroup: ${self:custom.monitoredLogGroup}
@@ -55,7 +55,7 @@ functions:
       ES_PORT: ${self:custom.esPort}
     package:
       include:
-        - cwl_logs_to_es/**
+        - cw_logs_to_es/**
         - certifi/**
         - chardet/**
         - elasticsearch/**

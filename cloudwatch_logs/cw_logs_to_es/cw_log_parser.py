@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from typing import List
 
 
-class ClodWatchLogsParser:
+class CloudWatchLogsParser:
     log = logging.getLogger(__name__)
 
     def __init__(self):
@@ -37,12 +37,12 @@ class ClodWatchLogsParser:
             except Exception as ex:
                 source.update(self.parse_dirty_json(msg_str))
 
-            index_name = f"cwl-{log_group_name}-{datetime.now(timezone.utc).strftime('%Y-%m-%d')}"
+            index_name = f"cw-{log_group_name}-{datetime.now(timezone.utc).strftime('%Y-%m-%d')}"
             index_name = index_name.replace(":", "").lower()
 
             action = {
                 "_index": index_name,
-                "_type": f"cwl-logs-{log_group_name}",
+                "_type": f"cw-logs-{log_group_name}",
                 "_id": event["id"],
                 "_source": source,
             }

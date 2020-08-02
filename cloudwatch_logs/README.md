@@ -1,19 +1,16 @@
 # cloudwatch-logs
-===
 
-This [serverless](https://serverless.com/) microservice will index logs
+This service using the [Serverless](https://serverless.com/) framework will index logs
 from [Amazon CloudWatch](https://aws.amazon.com/cloudwatch/) into an Elasticsearch service.
 
 Applications (most likely serverless microservices themselves) are expected to emit their log lines
 in a JSON-compatible format.
 
-
 ## Installation
 
-### Docker and serverless framework
+### Docker
 
-* Install [Docker](https://docs.docker.com/install/).
-* Install the [serverless framework](https://serverless.com/framework/docs/providers/aws/guide/installation/).
+Install [Docker](https://docs.docker.com/install/).
 
 ### Local development
 
@@ -31,6 +28,7 @@ As this application is deployed to and runs on AWS, developers on this project n
 The serverless.yml file needs the following variables which are assumed to be populated in the Docker container
     
 Name | Note
+----|----
 `SLS_DEPLOYMENT_BUCKET` | s3 bucket where the packaged applciation stack will be deployed
 `ES_HOST` | host/endpoint
 `ES_PORT` | port

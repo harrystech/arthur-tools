@@ -1,6 +1,10 @@
-FROM lambci/lambda:build-nodejs12.x
+FROM lambci/lambda:build-python3.8
 
-ENV SERVERLESS_VERSION=1.58.0
+RUN curl --silent --location https://rpm.nodesource.com/setup_12.x | bash - \
+    && yum install --assumeyes nodejs \
+    && yum clean all
+
+RUN npm install --global --unsafe-perm "serverless"
 
 # initialize these as NONE because sls plugin install scream if they don't exist in env
 ARG SLS_DEPLOYMENT_BUCKET="NONE"
@@ -12,8 +16,6 @@ ARG MONITORED_LOG_GROUP="NONE"
 WORKDIR /app/
 
 COPY serverless*.yml ./
-RUN npm install -g serverless@$SERVERLESS_VERSION
-RUN sls plugin install --name serverless-pseudo-parameters
 
 COPY requirements.txt .
 RUN pip3 install -r requirements.txt -t /app/python-requirements/

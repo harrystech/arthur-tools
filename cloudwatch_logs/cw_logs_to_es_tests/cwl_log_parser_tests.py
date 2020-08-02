@@ -4,13 +4,13 @@ import sys
 import warnings
 from unittest import TestCase
 
-from cwl_logs_to_es_tests import TEST_ROOT_DIR
+from cw_logs_to_es_tests import TEST_ROOT_DIR
 from harrys_logging import setup_logging
 
 setup_logging(format_type="flat")
 
 
-class ClodWatchLogsParserTests(TestCase):
+class CloudWatchLogsParserTests(TestCase):
     log = logging.getLogger(__name__)
 
     @classmethod
