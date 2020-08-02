@@ -2,22 +2,18 @@ FROM lambci/lambda:build-python3.8
 
 RUN curl --silent --location https://rpm.nodesource.com/setup_12.x | bash - \
     && yum install --assumeyes nodejs \
-    && yum clean all
+    && yum clean all \
+    && rm -rf /var/cache/yum
 
-RUN npm install --global --unsafe-perm "serverless"
+RUN npm install --global --unsafe-perm "serverless@1.77.1"
 
-# initialize these as NONE because sls plugin install scream if they don't exist in env
-ARG SLS_DEPLOYMENT_BUCKET="NONE"
-ARG ES_HOST="NONE"
-ARG ES_PORT="NONE"
-ARG ES_CLUSTER_ARN="NONE"
-ARG MONITORED_LOG_GROUP="NONE"
+# FIXME Why has this gone missing?
+RUN python3 -m pip install boto3
 
-WORKDIR /app/
+RUN npm install serverless-pseudo-parameters
 
-COPY serverless*.yml ./
+COPY serverless.yml requirements.txt /var/task/
+RUN python3 -m pip install --requirement /var/task/requirements.txt --target /var/task \
+    --no-cache-dir --disable-pip-version-check
 
-COPY requirements.txt .
-RUN pip3 install -r requirements.txt -t /app/python-requirements/
-
-WORKDIR /app/de-cloudwatch-logs-to-elasticsearch/
+WORKDIR /var/task

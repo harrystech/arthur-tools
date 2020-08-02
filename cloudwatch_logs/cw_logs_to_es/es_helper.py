@@ -1,50 +1,45 @@
-import gzip
-import io
 import json
 import logging
 import os
 
 import boto3
-import elasticsearch
 import elasticsearch.helpers
 import requests_aws4auth
-from elasticsearch import Elasticsearch
-from elasticsearch import connection as es_connection
+from elasticsearch import Elasticsearch, RequestsHttpConnection
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+region_name = os.getenv("AWS_REGION", os.getenv("AWS_DEFAULT_REGION", "us-east-1"))
+session = boto3.Session(region_name=region_name)
 
 
-class ElasticSearchWrapper:
-    log = logging.getLogger(__name__)
-    es: Elasticsearch = None
-
-    def __init__(self, es_host, es_port):
-        self.session = boto3.Session(
-            aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
-            aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
-            aws_session_token=os.environ.get("AWS_SESSION_TOKEN"),
-            region_name=os.environ.get("AWS_REGION"),
-        )
-        self.aws_es_client = self.session.client("es")
-        self.es = self.get_connected_es_instance(host=es_host, port=es_port)
-        self.log.info("Finish init")
-
-    def get_connected_es_instance(self, host, port) -> Elasticsearch:
-        es = Elasticsearch(
-            hosts=[{"host": host, "port": port}],
+class ElasticsearchWrapper:
+    def __init__(self, domain_name):
+        host = ElasticsearchWrapper.find_es_host(domain_name)
+        self.es = Elasticsearch(
+            hosts=[{"host": host, "port": 443}],
             use_ssl=True,
             verify_certs=True,
-            connection_class=es_connection.RequestsHttpConnection,
+            connection_class=RequestsHttpConnection,
             http_auth=self._aws_auth(),
+            http_compress=True,
             send_get_body_as="POST",
         )
-        self.log.info(es.info)
-        return es
+        logger.info(f"Cluster info: {self.es.info()}")
+
+    @staticmethod
+    def find_es_host(domain_name):
+        client = session.client("es")
+        response = client.describe_elasticsearch_domain(DomainName=domain_name)
+        return response["DomainStatus"]["Endpoint"]
 
     def _aws_auth(self):
-        credentials = self.session.get_credentials()
+        credentials = session.get_credentials()
         aws4auth = requests_aws4auth.AWS4Auth(
             credentials.access_key,
             credentials.secret_key,
-            self.session.region_name,
+            session.region_name,
             "es",
             session_token=credentials.token,
         )
@@ -57,6 +52,6 @@ class ElasticSearchWrapper:
     def insert_bulk_payload(self, bulk_payload) -> tuple:
         success, errors = elasticsearch.helpers.bulk(self.es, bulk_payload)
         for e in errors:
-            self.log.error(f"ERROR: {json.dumps(e, indent=2, default=str)} \n")
-        self.log.info(f"SUCCESS: {success} ERROR: {len(errors)}")
+            logger.error(f"ERROR: {json.dumps(e, indent=2, default=str)} \n")
+        logger.info(f"SUCCESS: {success} ERROR: {len(errors)}")
         return success, errors

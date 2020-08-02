@@ -1,8 +1,8 @@
-## Misc commands
+# Misc commands
 
-#### clear aws values in env
+## Clear AWS values in your shell environment
     unset $(env | grep AWS | cut -d '=' -f1) 
     
-#### for sls to pick up profile from env, need to run the following
-    export AWS_SDK_LOAD_CONFIG=1 && \
+## For serverless to pick up the AWS profile from env
+    export AWS_SDK_LOAD_CONFIG=1
     export AWS_PROFILE=example_profile

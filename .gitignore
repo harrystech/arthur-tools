@@ -65,9 +65,6 @@ docs/_build/
 # pyenv
 .python-version
 
-# Celery beat schedule file
-celerybeat-schedule
-
 # dotenv
 .env
 

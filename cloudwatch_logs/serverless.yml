@@ -1,22 +1,12 @@
-service: CloudWatch-Logs-to-Elasticsearch
-
-plugins:
-  - serverless-pseudo-parameters
+service: CloudWatchLogsToElasticsearch
 
 custom:
   region: ${self:provider.region}
   stage: ${opt:stage, self:provider.stage}
-  esClusterArn: ${env:ES_CLUSTER_ARN}
-  esHost: ${env:ES_HOST}
-  esPort: ${env:ES_PORT}
-  monitoredLogGroup: ${env:MONITORED_LOG_GROUP}
+  elasticsearchDomainName: ${env:ES_DOMAIN_NAME}
 
-package:
-  individually: true
-  exclude:
-    - ".*/**"
-    - "**/**"
-    - "*"
+plugins:
+  - serverless-pseudo-parameters
 
 provider:
   name: aws
@@ -25,34 +15,33 @@ provider:
   region: us-east-1
   stage: dev
   versionFunctions: true
-  deploymentBucket:
-    name: ${env:SLS_DEPLOYMENT_BUCKET}  
 
   iamRoleStatements:
     - Effect: Allow
       Action:
-        - logs:*
+        - es:DescribeElasticsearchDomain
       Resource:
-        - arn:aws:logs:${self:custom.region}:#{AWS::AccountId}:log-group
-
+        - arn:aws:es:*:*:domain/${self:custom.elasticsearchDomainName}
     - Effect: Allow
       Action:
         - es:ESHttp*
       Resource:
-        - ${self:custom.esClusterArn}/*
+        - arn:aws:es:*:*:domain/${self:custom.elasticsearchDomainName}/*
+
+package:
+  individually: true
+  exclude:
+    - ".*/**"
+    - "**/**"
+    - "*"
 
 functions:
-
-  LogsToElasticSearch:
-    handler: lambda_handler.process
+  lambdaHandler:
+    handler: cw_logs_to_es.lambda_handler.process
     memorySize: 512  # in MB
     timeout: 360  # in seconds
-    events:
-      - cloudwatchLog:
-          logGroup: ${self:custom.monitoredLogGroup}
     environment:
-      ES_HOST: ${self:custom.esHost}
-      ES_PORT: ${self:custom.esPort}
+      ES_DOMAIN_NAME: ${self:custom.elasticsearchDomainName}
     package:
       include:
         - cw_logs_to_es/**
@@ -63,4 +52,3 @@ functions:
         - requests/**
         - requests_aws4auth/**
         - urllib3/**
-        - lambda_handler.py

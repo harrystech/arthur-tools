@@ -1,4 +1,4 @@
-#### Current Log Structure:
+#### Current Log Structure
 Currently using the following common set of fields across applications/lambdas:
 
 ###### STANDARD PYTHON FIELDS:
