@@ -8,7 +8,19 @@
 # Arthur Tools
 
 We have some tools that we developed originally for [Project Arthur](https://github.com/harrystech/arthur-redshift-etl)
-which then appeared to more generally useful. So here they are.
+which then appeared to be more generally useful. So here they are.
+
+## JSON-formatted Logging
+
+The package `json_logging` supports regular Python logging to be formatted as JSON
+which makes it much easier to poss-process, for example, for example by loading
+log lines into an Elasticsearch cluster.
+
+See the [README](./json_logging/README.md) for more details about installatioon and usage.
+
+----
+
+# Older stuff that needs to be updated
 
 ## Deploying CloudFormation templates
 
