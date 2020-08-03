@@ -57,3 +57,21 @@ class ElasticsearchWrapper:
         logger.info(
             f"Bulk upload finished.", extra={"success_count": success, "error_count": len(errors)}
         )
+
+    @classmethod
+    def list_indices(cls, domain_name):
+        es = cls(domain_name)
+        response = es.es.indices.get(index="cw-*", allow_no_indices=True)
+        return frozenset(
+            response[index]["settings"]["index"]["provided_name"] for index in response
+        )
+
+
+if __name__ == "__main__":
+    import pprint
+    import sys
+
+    if len(sys.argv) == 2:
+        pprint.pprint(ElasticsearchWrapper.list_indices(sys.argv[1]))
+    else:
+        print(f"Usage: {sys.argv[0]} domain-name")

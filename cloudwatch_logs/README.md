@@ -55,3 +55,8 @@ bin/run_me.sh python3 -m cw_logs_to_es.lambda_handler
 aws-vault profile-with-enough-privileges
 bin/run_me.sh sls-deploy
 ```
+
+# Tips & Tricks
+
+## Clear AWS values in your shell environment
+    unset $(env | grep AWS | cut -d '=' -f1)
