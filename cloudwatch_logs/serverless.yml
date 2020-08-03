@@ -1,0 +1,54 @@
+service: CloudWatchLogsToElasticsearch
+
+custom:
+  region: ${self:provider.region}
+  stage: ${opt:stage, self:provider.stage}
+  elasticsearchDomainName: ${env:ES_DOMAIN_NAME}
+
+plugins:
+  - serverless-pseudo-parameters
+
+provider:
+  name: aws
+  runtime: python3.8
+  timeout: 60
+  region: us-east-1
+  stage: dev
+  versionFunctions: true
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - es:DescribeElasticsearchDomain
+      Resource:
+        - arn:aws:es:*:*:domain/${self:custom.elasticsearchDomainName}
+    - Effect: Allow
+      Action:
+        - es:ESHttp*
+      Resource:
+        - arn:aws:es:*:*:domain/${self:custom.elasticsearchDomainName}/*
+
+package:
+  individually: true
+  exclude:
+    - ".*/**"
+    - "**/**"
+    - "*"
+
+functions:
+  lambdaHandler:
+    handler: cw_logs_to_es.lambda_handler.process
+    memorySize: 512  # in MB
+    timeout: 360  # in seconds
+    environment:
+      ES_DOMAIN_NAME: ${self:custom.elasticsearchDomainName}
+    package:
+      include:
+        - cw_logs_to_es/**
+        - certifi/**
+        - chardet/**
+        - elasticsearch/**
+        - idna/**
+        - requests/**
+        - requests_aws4auth/**
+        - urllib3/**
