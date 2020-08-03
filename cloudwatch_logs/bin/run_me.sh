@@ -25,6 +25,7 @@ Available commands:
 * shell - run a shell inside the Docker container
 * python3 - run a python interpreter (use "-m $PROJ_NAME.lambda_handler")
 * describe-elasticsearch-domain - use aws-cli to describe the domain (give name as option!)
+* indices - list indices in the ES cluster
 * sls-deploy - use serverless to deploy the function
 * sls-logs - gather the logs
 * add-subscription - add subscription to log group to be ingested by "$PROJ_NAME"
@@ -64,8 +65,9 @@ case $cmd in
         docker_run /var/lang/bin/aws es describe-elasticsearch-domain --domain-name "$ES_DOMAIN_NAME"
         ;;
     'indices')
-        ENDPOINT="${1?Missing endpoint as option}"
-        curl "https://${ENDPOINT}/_cat/indices"
+        ES_ENDPOINT="${1?Missing endpoint from first args}"
+        set -x
+        curl "${ES_ENDPOINT}/_cat/indices"
         ;;
     'sls-deploy')
         # If you're running a domain called "notset", then you're SOL.
