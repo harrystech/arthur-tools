@@ -8,7 +8,7 @@ lines into an Elasticsearch cluster.
 
 Add this line to your `requirements.txt` file:
 ```text
-git+https://github.com/harrystech/arthur-tools.git#subdirectory=json_logging&egg=json-logging'
+git+https://github.com/harrystech/arthur-tools.git#subdirectory=json_logging&egg=json-logging
 ```
 
 You can also test the installation by calling `pip` directly. (You should
