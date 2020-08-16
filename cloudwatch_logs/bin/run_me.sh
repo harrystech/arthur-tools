@@ -39,7 +39,7 @@ Available commands to work with Elasticsearch domains:
 * list-log-groups - list log groups available in CloudWatch Logs
 
 NOTE
-The file "serverless.yml" is part of the image. So you may have to call 'build' more often.
+The file "serverless.yml" is part of the image. Th image is only automatically re-built for deploys.
 
 USAGE
 }
@@ -89,7 +89,6 @@ docker_run () {
 
 docker_sls () {
     docker_run /usr/bin/sls "$@"
-    echo "If you do not see the changes that you expected, you have to rebuild the Docker image."
 }
 
 case $cmd in
@@ -101,7 +100,7 @@ case $cmd in
         docker_aws_put_subscription_filter $LOG_GROUP_NAME
         ;;
     'build')
-        docker_build "$@"
+        docker_build
         ;;
     'describe-elasticsearch-domain')
         # If you're running a domain called "notset", then you're SOL.
@@ -127,6 +126,7 @@ case $cmd in
         ;;
     'sls-deploy')
         [[ "${ES_DOMAIN_NAME-notset}" = "notset" ]] && carp "ES_DOMAIN_NAME is not set"
+        docker_build
         docker_sls deploy --verbose --force "$@"
         ;;
     'sls-logs')
