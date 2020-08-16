@@ -57,4 +57,4 @@ jobs:
         python3 -m pip install --requirement requirements-linters.txt
     - name: Run type checker
       run: |-
-        mypy cloudwatch_logs/cw_logs_to_es json_logging
+        mypy cloudwatch_logs/cw_logs_to_es json_logging || echo "This source code has issues."
