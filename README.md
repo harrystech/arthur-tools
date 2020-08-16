@@ -56,7 +56,7 @@ Until we have a setup with Docker, let's use a virtual environment.
 ```shell
 python3 -m venv venv
 source venv/bin/activate
-python3 -m pip install black isort mypy mypy-boto3 pycodestyle
+python3 -m pip install --upgrade --requirement requirements-linters.txt
 ```
 
 ### Usage
@@ -67,7 +67,7 @@ For example for `cloudwatch_logs`:
 source venv/bin/activate
 
 black cloudwatch_logs/cw_logs_to_es/
+flake8 cloudwatch_logs/cw_logs_to_es/
 isort cloudwatch_logs/cw_logs_to_es/
 mypy cloudwatch_logs/cw_logs_to_es/
-pycodestyle cloudwatch_logs/cw_logs_to_es/
 ```

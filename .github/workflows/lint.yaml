@@ -1,0 +1,60 @@
+# Simple workflow to run linters.
+
+name: Lint Python code
+
+on:
+  push:
+    paths:
+    - ".github/workflows/lint.yaml"
+    - "cloudwatch_logs"
+    - "json_logging"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout out code
+      uses: actions/checkout@v2
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+    - name: Cache pip
+      uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements-linters.txt') }}
+    - name: Install dependencies
+      run: |-
+        python3 -m pip install --upgrade pip
+        python3 -m pip install --requirement requirements-linters.txt
+    - name: Lint with black
+      run: |-
+        black --check cloudwatch_logs/cw_logs_to_es json_logging
+    - name: Lint with isort
+      run: |-
+        isort --check-only cloudwatch_logs/cw_logs_to_es json_logging
+    - name: Lint with flake8
+      run: |-
+        flake8 cloudwatch_logs/cw_logs_to_es json_logging
+  mypy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout out code
+      uses: actions/checkout@v2
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+    - name: Cache pip
+      uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements-linters.txt') }}
+    - name: Install dependencies
+      run: |-
+        python3 -m pip install --upgrade pip
+        python3 -m pip install --requirement requirements-linters.txt
+    - name: Run type checker
+      run: |-
+        mypy cloudwatch_logs/cw_logs_to_es json_logging
