@@ -7,10 +7,10 @@ custom:
 
 provider:
   name: aws
-  runtime: python3.8
-
   region: ${self:custom.region}
+  runtime: python3.8
   stage: ${self:custom.stage}
+  versionFunctions: true
 
   iamRoleStatements:
     - Action: es:DescribeElasticsearchDomain
@@ -21,7 +21,6 @@ provider:
       Effect: Allow
       Resource: arn:aws:es:*:*:domain/${self:custom.elasticsearchDomainName}/*
       Sid: AccessToElasticsearchDomain
-  versionFunctions: true
 
 package:
   individually: true
@@ -30,11 +29,13 @@ package:
 
 functions:
   lambdaHandler:
+    description: Stream CloudWatch Logs to Elasticsearch Service
     environment:
       ES_DOMAIN_NAME: ${self:custom.elasticsearchDomainName}
     handler: cw_logs_to_es.lambda_handler.process
-    memorySize: 512  # in MB
-    timeout: 360  # in seconds
+    memorySize: 256  # in MB
+    timeout: 60  # in seconds
+
     package:
       include:
         - cw_logs_to_es/**

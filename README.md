@@ -10,6 +10,13 @@
 We have some tools that we developed originally for [Project Arthur](https://github.com/harrystech/arthur-redshift-etl)
 which then appeared to be more generally useful. So here they are.
 
+## Sending CloudWatch logs to Elasticsearch Service
+
+The package `cloudwatch_logs` contains a service that enables to easily send
+logs from CloudWatch into a Elasticsearch Service.
+
+See the [README](./cloudwatch_logs/README.md) for more details about installatioon and usage.
+
 ## JSON-formatted Logging
 
 The package `json_logging` supports regular Python logging to be formatted as JSON
