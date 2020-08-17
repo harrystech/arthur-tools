@@ -26,6 +26,8 @@ class CloudWatchLogsParser:
                 continue
             if message.startswith("REPORT RequestId"):
                 payload = self._parse_control_message(message)
+            elif message.startswith("[ERROR] "):
+                payload = self._parse_error_message(message)
             else:
                 payload = self._parse_single_event(message)
 
@@ -62,6 +64,16 @@ class CloudWatchLogsParser:
             elif key == "Init Duration":
                 report["init_duration_in_ms"] = float(value[1:-3])
         return report
+
+    @classmethod
+    def _parse_error_message(cls, error_message: str) -> dict:
+        error_report = {"log_type": "ERROR"}
+        newline_pos = error_message.find("\n")
+        if newline_pos < 0:
+            error_report["message"] = error_message
+        else:
+            error_report["message"] = error_message[:newline_pos]
+        return error_report
 
     @classmethod
     def _parse_single_event(cls, json_str: str) -> dict:
