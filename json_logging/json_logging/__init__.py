@@ -168,7 +168,7 @@ def update_context(**kwargs: str) -> None:
 
 class log_stack_trace(ContextDecorator):
     """This context enables logging a stacktrace automatically when an exception occurs."""
-    
+
     def __init__(self, logger: logging.Logger) -> None:
         self._logger = logger
 

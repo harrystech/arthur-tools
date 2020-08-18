@@ -34,7 +34,7 @@ class CloudWatchLogsParser:
             source.update(event)
             try:
                 source.update(json.loads(msg_str))
-            except Exception as ex:
+            except Exception:
                 source.update(self.parse_dirty_json(msg_str))
 
             index_name = f"cw-{log_group_name}-{datetime.now(timezone.utc).strftime('%Y-%m-%d')}"
