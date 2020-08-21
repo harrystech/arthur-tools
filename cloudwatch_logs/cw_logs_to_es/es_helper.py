@@ -34,8 +34,7 @@ class ElasticsearchWrapper:
         response = client.describe_elasticsearch_domain(DomainName=domain_name)
         return response["DomainStatus"]["Endpoint"]
 
-    @staticmethod
-    def _aws_auth():
+    def _aws_auth(self):
         credentials = session.get_credentials()
         aws4auth = requests_aws4auth.AWS4Auth(
             credentials.access_key,
@@ -50,13 +49,12 @@ class ElasticsearchWrapper:
 
         return wrapped_aws4auth
 
-    def insert_bulk_payload(self, bulk_payload) -> None:
+    def insert_bulk_payload(self, bulk_payload) -> tuple:
         success, errors = elasticsearch.helpers.bulk(self.es, bulk_payload)
         for e in errors:
-            logger.error(f"ES error: {json.dumps(e, indent=2, default=str)}\n")
-        logger.info(
-            f"Bulk upload finished.", extra={"success_count": success, "error_count": len(errors)}
-        )
+            logger.error(f"ERROR: {json.dumps(e, indent=2, default=str)} \n")
+        logger.info(f"SUCCESS: {success} ERROR: {len(errors)}")
+        return success, errors
 
     @classmethod
     def list_indices(cls, domain_name):
@@ -66,12 +64,20 @@ class ElasticsearchWrapper:
             response[index]["settings"]["index"]["provided_name"] for index in response
         )
 
+    @classmethod
+    def delete_index(cls, domain_name, index):
+        es = cls(domain_name)
+        return es.es.indices.delete(index)
+
 
 if __name__ == "__main__":
     import pprint
     import sys
 
-    if len(sys.argv) == 2:
-        pprint.pprint(ElasticsearchWrapper.list_indices(sys.argv[1]))
+    if len(sys.argv) == 3 and sys.argv[1] == "list":
+        pprint.pprint(ElasticsearchWrapper.list_indices(sys.argv[2]))
+    elif len(sys.argv) == 4 and sys.argv[1] == "delete":
+        pprint.pprint(ElasticsearchWrapper.delete_index(sys.argv[2], sys.argv[3]))
     else:
-        print(f"Usage: {sys.argv[0]} domain-name")
+        print(f"Usage: {sys.argv[0]} list|delete domain-name [pattern]")
+        sys.exit(1)

@@ -30,6 +30,7 @@ Available commands to use Serverless for deployment:
 * sls-logs - gather the logs
 
 Available commands to work with Elasticsearch domains:
+* delete-index - delete a specific index
 * describe-elasticsearch-domain - use aws-cli to describe the domain (give name as option!)
 * list-indices - list indices in the ES cluster
 
@@ -102,6 +103,11 @@ case $cmd in
     'build')
         docker_build
         ;;
+    'delete-index')
+        [[ "${ES_DOMAIN_NAME-notset}" = "notset" ]] && carp "ES_DOMAIN_NAME is not set"
+        INDEX_NAME="${1?You need to specify a index as arg}"
+        docker_run /var/lang/bin/python3 -m cw_logs_to_es.es_helper delete "$ES_DOMAIN_NAME" "$INDEX_NAME"
+        ;;
     'describe-elasticsearch-domain')
         # If you're running a domain called "notset", then you're SOL.
         [[ "${ES_DOMAIN_NAME-notset}" = "notset" ]] && carp "ES_DOMAIN_NAME is not set"
@@ -113,7 +119,7 @@ case $cmd in
         ;;
     'list-indices')
         [[ "${ES_DOMAIN_NAME-notset}" = "notset" ]] && carp "ES_DOMAIN_NAME is not set"
-        docker_run /var/lang/bin/python3 -m cw_logs_to_es.es_helper "$ES_DOMAIN_NAME"
+        docker_run /var/lang/bin/python3 -m cw_logs_to_es.es_helper list "$ES_DOMAIN_NAME"
         ;;
     'list-log-groups')
         docker_aws logs describe-log-groups --query 'logGroups[*].logGroupName'
