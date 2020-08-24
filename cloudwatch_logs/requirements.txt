@@ -1,2 +1,3 @@
+boto3  # FIXME Missing in Docker image
 elasticsearch==7.1.0
 requests-aws4auth==0.9
