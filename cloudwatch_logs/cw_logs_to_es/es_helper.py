@@ -34,7 +34,8 @@ class ElasticsearchWrapper:
         response = client.describe_elasticsearch_domain(DomainName=domain_name)
         return response["DomainStatus"]["Endpoint"]
 
-    def _aws_auth(self):
+    @staticmethod
+    def _aws_auth():
         credentials = session.get_credentials()
         aws4auth = requests_aws4auth.AWS4Auth(
             credentials.access_key,
@@ -49,11 +50,13 @@ class ElasticsearchWrapper:
 
         return wrapped_aws4auth
 
-    def insert_bulk_payload(self, bulk_payload) -> tuple:
+    def insert_bulk_payload(self, bulk_payload) -> None:
         success, errors = elasticsearch.helpers.bulk(self.es, bulk_payload)
         for e in errors:
-            logger.error(f"ERROR: {json.dumps(e, indent=2, default=str)} \n")
-        logger.info(f"SUCCESS: {success} ERROR: {len(errors)}")
+            logger.error(f"ES ERROR: {json.dumps(e, indent=2, default=str)} \n")
+        logger.info(
+            f"Bulk upload finished.", extra={"success_count": success, "error_count": len(errors)}
+        )
         return success, errors
 
     @classmethod
