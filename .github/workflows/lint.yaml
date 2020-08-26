@@ -6,8 +6,8 @@ on:
   push:
     paths:
     - ".github/workflows/lint.yaml"
-    - "cloudwatch_logs"
-    - "json_logging"
+    - "cloudwatch_logs/**"
+    - "json_logging/**"
 
 jobs:
   lint:
@@ -30,13 +30,13 @@ jobs:
         python3 -m pip install --requirement requirements-linters.txt
     - name: Lint with black
       run: |-
-        black --check cloudwatch_logs/cw_logs_to_es json_logging
+        black --check cloudwatch_logs/cw_logs_to_es/ json_logging/
     - name: Lint with isort
       run: |-
-        isort --check-only cloudwatch_logs/cw_logs_to_es json_logging
+        isort --check-only cloudwatch_logs/cw_logs_to_es/ json_logging/
     - name: Lint with flake8
       run: |-
-        flake8 cloudwatch_logs/cw_logs_to_es json_logging
+        flake8 cloudwatch_logs/cw_logs_to_es/ json_logging/
   mypy:
     runs-on: ubuntu-latest
     steps:
@@ -57,4 +57,5 @@ jobs:
         python3 -m pip install --requirement requirements-linters.txt
     - name: Run type checker
       run: |-
-        mypy cloudwatch_logs/cw_logs_to_es json_logging || echo "This source code has issues."
+        mypy cloudwatch_logs/cw_logs_to_es/
+        mypy json_logging/
