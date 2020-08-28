@@ -1,7 +1,7 @@
 import json
 import logging
 from datetime import datetime
-from typing import Iterator
+from typing import Dict, Iterator, Union
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -49,7 +49,7 @@ class CloudWatchLogsParser:
     def _parse_control_message(cls, control: str) -> dict:
         clean_control = control.strip()
         fields = clean_control.split("\t")
-        report = dict(message=clean_control, log_type="REPORT")
+        report: Dict[str, Union[float, int, str]] = dict(message=clean_control, log_type="REPORT")
         for key, value in [field.split(":") for field in fields]:
             if key == "REPORT RequestId":
                 report["aws_request_id"] = value.strip()
@@ -78,7 +78,7 @@ class CloudWatchLogsParser:
     @classmethod
     def _parse_single_event(cls, json_str: str) -> dict:
         try:
-            return json.loads(json_str)
+            return dict(json.loads(json_str))
         except Exception as exc:
             # Parsing as JSON failed, try to recover by looking for pairs.
             recovered = cls._parse_dirty_json(json_str)
