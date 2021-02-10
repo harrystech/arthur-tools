@@ -81,7 +81,7 @@ def _aws_auth():
     session = boto3.Session()
     logger.info(
         f"Retrieving credentials "
-        "(profile_name={session.profile_name}, region_name={session.region_name})",
+        f"(profile_name={session.profile_name}, region_name={session.region_name})",
     )
     credentials = session.get_credentials()
     aws4auth = requests_aws4auth.AWS4Auth(
