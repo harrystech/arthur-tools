@@ -10,6 +10,12 @@ import logging.config
 import time
 import traceback
 from contextlib import ContextDecorator
+from logging import NullHandler
+
+
+# Just for developer convenience -- this avoids having too many imports of "logging" packages.
+def getLogger(name: str) -> logging.Logger:
+    return logging.getLogger(name)
 
 
 class ContextFilter(logging.Filter):
@@ -24,6 +30,7 @@ class ContextFilter(logging.Filter):
         "aws_request_id": "UNKNOWN",  # mypy stumbles on all values being None
         "function_name": None,
         "function_version": None,
+        "invoked_function_arn": None,
         "log_group_name": None,
         "log_stream_name": None,
     }
@@ -80,6 +87,7 @@ class JsonFormatter(logging.Formatter):
         # Common context attributes which we want to rename:
         "function_name": "lambda.function_name",
         "function_version": "lambda.function_version",
+        "invoked_function_arn": "lambda.invoked_function_arn",
         "log_stream_name": "cwl.log_stream_name",
         # LogRecord attributes which we want to suppress:
         "args": None,
@@ -109,7 +117,7 @@ class JsonFormatter(logging.Formatter):
         # (Go to https://www.epochconverter.com/ to convert the timestamp in milliseconds.)
         data["timestamp"] = int(record.created * 1000.0)
         data["gmtime"] = self.formatTime(record)
-        return json.dumps(data, separators=(",", ":"), sort_keys=True)
+        return json.dumps(data, default=str, separators=(",", ":"), sort_keys=True)
 
 
 # We don't create the config dict until here so that we can use the classes
@@ -157,11 +165,6 @@ def configure_logging() -> None:
     logging.config.dictConfig(LOGGING_STREAM_CONFIG)
 
 
-# Just for developer convenience -- this avoids having too many imports of "logging" packages.
-def getLogger(name: str) -> logging.Logger:
-    return logging.getLogger(name)
-
-
 def update_context(**kwargs: str) -> None:
     ContextFilter.update_context(**kwargs)
 
@@ -184,8 +187,17 @@ class log_stack_trace(ContextDecorator):
         return None
 
 
-if __name__ == "__main__":
+def main_test() -> None:
     configure_logging()
-    update_context(aws_request_id="62E538E9-E9C5-415A-9771-6588F9A1A708")
+    logger = getLogger(__name__)
+    logger.addHandler(NullHandler())
 
+    update_context(aws_request_id="62E538E9-E9C5-415A-9771-6588F9A1A708")
     logging.info("Message at INFO level", extra={"planet": "earth"})
+
+    num_count = 99
+    logger.info(f"Finished counting {num_count} balloons", extra={"balloons": num_count})
+
+
+if __name__ == "__main__":
+    main_test()

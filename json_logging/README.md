@@ -1,8 +1,8 @@
 # JSON-formatted Logging
 
 The package `json_logging` supports regular Python logging to be formatted as
-JSON which makes it much easier to poss-process, for example, by loading log
-lines into an Elasticsearch cluster.
+JSON which makes it much easier to post-process, for example, by loading log
+lines into an Elasticsearch cluster or by defining metrics in CloudWatch.
 
 ## Fields
 
@@ -60,16 +60,25 @@ def handle_event(event, context):
         aws_request_id=context.aws_request_id,
         function_name=context.function_name,
         function_version=context.function_version,
+        invoked_function_arn=context.invoked_function_arn,
         log_stream_name=context.log_stream_name,
     )
     logger.info(f"Starting {__name__}", extra={"event": event})
 ```
 
-### Additional info
+### "Library" code
+
+Outside the main module where you configure the logger, the pattern is:
+```python
+import json_logging
+
+logger = json_logging.getLogger(__name__)
+logger.addHandler(json_logging.NullHandler())
+```
 
 ### "Extra" information
 
-You can send information into the log record using the `extra` kwarg, which
+You can send additional information into the log record using the `extra` kwarg, which
 avoids having to process the message later:
 ```python
 logger.info(f"Finished processing {num_count} file(s)", extra={"file_count": num_count})
@@ -82,6 +91,7 @@ Log an exception along with a strack trace like so:
 with json_logging.log_stack_trace(logger):
     do_something_dangerous()
 ```
+(Note that this doesn't "catch" the exception.)
 
 ## Development
 
@@ -96,5 +106,7 @@ python3 -m pip install --upgrade 'git+https://github.com/harrystech/arthur-tools
 ### Running unit tests
 
 ```shell script
+cd json_logging
 python3 -m unittest discover tests
+python3 json_logging/__init__.py
 ```
