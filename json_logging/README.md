@@ -100,7 +100,7 @@ probably do so inside a Docker container or using a virtual environment.)
 ```shell script
 python3 -m venv venv
 source venv/bin/activate
-python3 -m pip install --upgrade 'git+https://github.com/harrystech/arthur-tools.git@add-json-logging-package#subdirectory=json_logging&egg=json-logging'
+python3 -m pip install --upgrade 'git+https://github.com/harrystech/arthur-tools.git@next#subdirectory=json_logging&egg=json-logging'
 ```
 
 ### Running unit tests
