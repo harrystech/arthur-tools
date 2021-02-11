@@ -8,5 +8,5 @@ setup(
     packages=["json_logging"],
     python_requires=">=3.5",
     url="https://github.com/harrystech/arthur-tools",
-    version="1.0.0",
+    version="1.1.0",
 )
