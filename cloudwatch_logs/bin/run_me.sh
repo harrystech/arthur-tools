@@ -67,7 +67,7 @@ docker_aws_put_subscription_filter () {
         --statement-id "$(uuidgen)"
 
     docker_aws logs put-subscription-filter \
-        --log-group-name $LOG_GROUP_NAME \
+        --log-group-name "$LOG_GROUP_NAME" \
         --filter-name "Lambda_$FUNCTION_NAME" \
         --filter-pattern "" \
         --destination-arn "$DESTINATION_ARN"
@@ -82,7 +82,7 @@ docker_build () {
 
 docker_run () {
     set -o xtrace
-    docker run --rm --interactive --tty --volume "$PWD/$PROJ_NAME":"/var/task/$PROJ_NAME" \
+    docker run --rm --interactive --tty --volume "$PWD/$PROJ_NAME:/var/task/$PROJ_NAME" \
         --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY --env AWS_SESSION_TOKEN \
         --env AWS_REGION --env AWS_DEFAULT_REGION --env ES_DOMAIN_NAME \
         "$PROJ_NAME":latest "$@"
@@ -98,7 +98,7 @@ case $cmd in
         ;;
     'add-subscription')
         LOG_GROUP_NAME="${1?You need to specify a log group name as arg}"
-        docker_aws_put_subscription_filter $LOG_GROUP_NAME
+        docker_aws_put_subscription_filter "$LOG_GROUP_NAME"
         ;;
     'build')
         docker_build
