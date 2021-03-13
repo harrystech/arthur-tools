@@ -1,12 +1,12 @@
 import argparse
+import uuid
 
 import json_logging
 
 logger = json_logging.getLogger(__name__)
 
 
-def main_test() -> None:
-    json_logging.update_context(aws_request_id="62E538E9-E9C5-415A-9771-6588F9A1A708")
+def main() -> None:
     logger.info("Message at INFO level")
     logger.debug("Message at DEBUG level")
 
@@ -29,5 +29,6 @@ if __name__ == "__main__":
 
     json_logging.configure_logging("DEBUG" if args.verbose else "INFO")
     json_logging.set_output_format(pretty=args.pretty)
+    json_logging.update_context(request_id=uuid.uuid4().hex)
 
-    main_test()
+    main()

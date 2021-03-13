@@ -12,7 +12,7 @@ import time
 import traceback
 from contextlib import ContextDecorator
 from logging import NullHandler  # noqa: F401
-from typing import Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 
 class ContextFilter(logging.Filter):
@@ -30,6 +30,7 @@ class ContextFilter(logging.Filter):
         "invoked_function_arn": None,
         "log_group_name": None,
         "log_stream_name": None,
+        "request_id": None,
     }
 
     def filter(self, record: logging.LogRecord) -> bool:
@@ -38,6 +39,12 @@ class ContextFilter(logging.Filter):
             if value is not None:
                 setattr(record, field, value)
         return True
+
+    @classmethod
+    def update_from_lambda_context(cls, context: Any) -> None:
+        """Update fields stored in the global context filter based on attributes of the context."""
+        for field, value in cls._context.items():
+            cls._context[field] = getattr(context, field, value)
 
     @classmethod
     def update_context(cls, **kwargs: str) -> None:
@@ -118,8 +125,9 @@ class JsonFormatter(logging.Formatter):
                 if new_name is not None:
                     assembled[new_name] = value
             else:
+                # This lets anything, I mean anything, from "extra={}" slip through.
                 assembled[attr] = value
-        # The "message" is added last so an accidentally specified message in the extra kwargs
+        # The "message" is added here so an accidentally specified message in the extra kwargs
         # is ignored.
         assembled["message"] = record.getMessage()
         # We show elapsed milliseconds as int, not float.
@@ -194,6 +202,11 @@ def set_output_format(pretty: bool = False, pretty_if_tty: bool = False) -> None
         JsonFormatter.output_format = "compact"
 
 
+def update_from_lambda_context(context: Any) -> None:
+    """Update values in the logging context from the context of a AWS Lambda function."""
+    ContextFilter.update_from_lambda_context(context)
+
+
 def update_context(**kwargs: str) -> None:
     """Update values in the logging context to be included with every log record."""
     ContextFilter.update_context(**kwargs)
@@ -210,9 +223,8 @@ class log_stack_trace(ContextDecorator):
 
     def __exit__(self, exc_type, exc_val, exc_tb):  # type: ignore
         if exc_type:
-            stack_trace_output = "".join(traceback.format_exception(exc_type, exc_val, exc_tb))
-            self._logger.error(
-                f"Exception: {exc_val!r}",
-                extra={"stack_trace": stack_trace_output.splitlines()},
-            )
+            tb = traceback.TracebackException(exc_type, exc_val, exc_tb)
+            message = next(tb.format_exception_only()).strip()
+            stack_trace_lines = ("".join(tb.format())).splitlines()
+            self._logger.error(message, extra={"stack_trace": stack_trace_lines})
         return None

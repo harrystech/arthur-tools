@@ -68,10 +68,11 @@ import json_logging
 json_logging.configure_logging()
 logger = json_logging.getLogger(__name__)
 
+json_logging.update_context(request_id='abcde-12345')
 logger.info("Hello World!")
 ```
 
-### Use For Lambda Functions
+### Use For AWS Lambda Functions
 
 The code example below
 * configures logging in the module that is called by AWS Lambda
@@ -87,13 +88,7 @@ logger = json_logging.getLogger(__name__)
 
 
 def handle_event(event, context):
-    json_logging.update_context(
-        aws_request_id=context.aws_request_id,
-        function_name=context.function_name,
-        function_version=context.function_version,
-        invoked_function_arn=context.invoked_function_arn,
-        log_stream_name=context.log_stream_name,
-    )
+    json_logging.update_from_lambda_context(context)
     logger.info(f"Starting {__name__}", extra={"event": event})
 ```
 
