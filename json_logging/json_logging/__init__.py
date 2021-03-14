@@ -8,9 +8,9 @@ import json
 import logging
 import logging.config
 import sys
-import time
 import traceback
 from contextlib import ContextDecorator
+from datetime import datetime, timezone
 from logging import NullHandler  # noqa: F401
 from typing import Any, Dict, Optional, Tuple, Union
 
@@ -60,6 +60,20 @@ class ContextFilter(logging.Filter):
                 raise ValueError(f"unexpected field: '{field}'")
 
 
+class DefaultJsonFormat(json.JSONEncoder):
+    """Default to using 'str()' except for dates which are ISO 8601."""
+
+    def default(self, obj: Any) -> str:
+        if isinstance(obj, datetime):
+            s = obj.isoformat(timespec="milliseconds")
+            if s.endswith("+00:00"):
+                # Make 99% of our timestamps easier to read by replacing the time offset with "Z".
+                return s[:-6] + "Z"
+            return s
+        else:
+            return str(obj)
+
+
 class JsonFormatter(logging.Formatter):
     """
     Format the message to be easily reverted into an object by using JSON format.
@@ -67,13 +81,10 @@ class JsonFormatter(logging.Formatter):
     Notes:
         * The "format" is ignored since we convert based on available info.
         * The timestamps are in UTC.
-    """
 
-    # This format is compatible with "strict_date_time" in Elasticsearch:
-    # yyyy-MM-dd'T'HH:mm:ss.SSSZZ
-    converter = time.gmtime
-    default_time_format = "%Y-%m-%dT%H:%M:%SZ"
-    default_msec_format = "%.19s.%03dZ"
+    This format of "gmtime" is compatible with "strict_date_time" in Elasticsearch,
+    (as "yyyy-MM-dd'T'HH:mm:ss.SSSZZ") and other log collection tools.
+    """
 
     attribute_mapping = {
         # LogRecord attributes for which we want new names:
@@ -124,9 +135,10 @@ class JsonFormatter(logging.Formatter):
                 new_name = self.attribute_mapping[attr]
                 if new_name is not None:
                     assembled[new_name] = value
-            else:
-                # This lets anything, I mean anything, from "extra={}" slip through.
-                assembled[attr] = value
+                continue
+            # This lets anything, I mean anything, from "extra={}" slip through.
+            assembled[attr] = value
+
         # The "message" is added here so an accidentally specified message in the extra kwargs
         # is ignored.
         assembled["message"] = record.getMessage()
@@ -135,10 +147,13 @@ class JsonFormatter(logging.Formatter):
         # Finally, always add a timestamp as epoch msecs and in a human readable format.
         # (Go to https://www.epochconverter.com/ to convert the timestamp in milliseconds.)
         assembled["timestamp"] = int(record.created * 1000.0)
-        assembled["gmtime"] = self.formatTime(record)
-        # TODO(tom): Use custom class with cls= to dump dates.
+        assembled["gmtime"] = datetime.fromtimestamp(record.created, timezone.utc)
         return json.dumps(
-            assembled, default=str, indent=self.indent, separators=self.separators, sort_keys=True
+            assembled,
+            cls=DefaultJsonFormat,
+            indent=self.indent,
+            separators=self.separators,
+            sort_keys=True,
         )
 
 
