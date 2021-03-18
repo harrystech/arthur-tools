@@ -7,15 +7,12 @@ Since we assume this will be used by Lambda functions, we also add the request i
 import json
 import logging
 import logging.config
-import time
+import sys
 import traceback
 from contextlib import ContextDecorator
-from logging import NullHandler
-
-
-# Just for developer convenience -- this avoids having too many imports of "logging" packages.
-def getLogger(name: str) -> logging.Logger:
-    return logging.getLogger(name)
+from datetime import datetime, timezone
+from logging import NullHandler  # noqa: F401
+from typing import Any, Dict, Optional, Tuple, Union
 
 
 class ContextFilter(logging.Filter):
@@ -26,13 +23,14 @@ class ContextFilter(logging.Filter):
     means that we will store some values with the class, not the instances.
     """
 
-    _context = {
-        "aws_request_id": "UNKNOWN",  # mypy stumbles on all values being None
+    _context: Dict[str, Optional[str]] = {
+        "aws_request_id": None,
         "function_name": None,
         "function_version": None,
         "invoked_function_arn": None,
         "log_group_name": None,
         "log_stream_name": None,
+        "request_id": None,
     }
 
     def filter(self, record: logging.LogRecord) -> bool:
@@ -43,9 +41,15 @@ class ContextFilter(logging.Filter):
         return True
 
     @classmethod
+    def update_from_lambda_context(cls, context: Any) -> None:
+        """Update fields stored in the global context filter based on attributes of the context."""
+        for field, value in cls._context.items():
+            cls._context[field] = getattr(context, field, value)
+
+    @classmethod
     def update_context(cls, **kwargs: str) -> None:
         """
-        Update any of the fields stored in the (global) context filter.
+        Update any of the fields stored in the global context filter.
 
         Note that trying to set a field that's not been defined raises a ValueError.
         """
@@ -56,6 +60,20 @@ class ContextFilter(logging.Filter):
                 raise ValueError(f"unexpected field: '{field}'")
 
 
+class DefaultJsonFormat(json.JSONEncoder):
+    """Default to using 'str()' except for dates which are ISO 8601."""
+
+    def default(self, obj: Any) -> str:
+        if isinstance(obj, datetime):
+            s = obj.isoformat(timespec="milliseconds")
+            if s.endswith("+00:00"):
+                # Make 99% of our timestamps easier to read by replacing the time offset with "Z".
+                return s[:-6] + "Z"
+            return s
+        else:
+            return str(obj)
+
+
 class JsonFormatter(logging.Formatter):
     """
     Format the message to be easily reverted into an object by using JSON format.
@@ -63,13 +81,10 @@ class JsonFormatter(logging.Formatter):
     Notes:
         * The "format" is ignored since we convert based on available info.
         * The timestamps are in UTC.
-    """
 
-    # This format is compatible with "strict_date_time" in Elasticsearch:
-    # yyyy-MM-dd'T'HH:mm:ss.SSSZZ
-    converter = time.gmtime
-    default_time_format = "%Y-%m-%dT%H:%M:%SZ"
-    default_msec_format = "%.19s.%03dZ"
+    This format of "gmtime" is compatible with "strict_date_time" in Elasticsearch,
+    (as "yyyy-MM-dd'T'HH:mm:ss.SSSZZ") and other log collection tools.
+    """
 
     attribute_mapping = {
         # LogRecord attributes for which we want new names:
@@ -88,8 +103,9 @@ class JsonFormatter(logging.Formatter):
         "function_name": "lambda.function_name",
         "function_version": "lambda.function_version",
         "invoked_function_arn": "lambda.invoked_function_arn",
+        "log_group_name": "cwl.log_group_name",
         "log_stream_name": "cwl.log_stream_name",
-        # LogRecord attributes which we want to suppress:
+        # LogRecord attributes which we want to suppress or rewrite ourselves:
         "args": None,
         "created": None,
         "msecs": None,
@@ -98,30 +114,51 @@ class JsonFormatter(logging.Formatter):
         "thread": None,
     }
 
+    # Use "set_output_format()" to change this value.
+    output_format = "compact"
+
+    @property
+    def indent(self) -> Optional[str]:
+        return {"compact": None, "pretty": "    "}[self.output_format]
+
+    @property
+    def separators(self) -> Tuple[str, str]:
+        return {"compact": (",", ":"), "pretty": (",", ": ")}[self.output_format]
+
     def format(self, record: logging.LogRecord) -> str:
         """Format log record by creating a JSON-format in a string."""
-        data = {}
+        assembled = {}
         for attr, value in record.__dict__.items():
             if value is None:
                 continue
             if attr in self.attribute_mapping:
                 new_name = self.attribute_mapping[attr]
                 if new_name is not None:
-                    data[new_name] = value
-            else:
-                data[attr] = value
-        # The "message" is added last so an accidentally specified message in the extra kwargs
+                    assembled[new_name] = value
+                continue
+            # This lets anything, I mean anything, from "extra={}" slip through.
+            assembled[attr] = value
+
+        # The "message" is added here so an accidentally specified message in the extra kwargs
         # is ignored.
-        data["message"] = record.getMessage()
+        assembled["message"] = record.getMessage()
+        # We show elapsed milliseconds as int, not float.
+        assembled["elapsed_ms"] = int(record.relativeCreated)
         # Finally, always add a timestamp as epoch msecs and in a human readable format.
         # (Go to https://www.epochconverter.com/ to convert the timestamp in milliseconds.)
-        data["timestamp"] = int(record.created * 1000.0)
-        data["gmtime"] = self.formatTime(record)
-        return json.dumps(data, default=str, separators=(",", ":"), sort_keys=True)
+        assembled["timestamp"] = int(record.created * 1000.0)
+        assembled["gmtime"] = datetime.fromtimestamp(record.created, timezone.utc)
+        return json.dumps(
+            assembled,
+            cls=DefaultJsonFormat,
+            indent=self.indent,
+            separators=self.separators,
+            sort_keys=True,
+        )
 
 
-# We don't create the config dict until here so that we can use the classes
-# (instead of class names in strings).
+# We don't create this dict earlier so that we can use the classes (instead of their names
+# as strings).
 LOGGING_STREAM_CONFIG = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -161,11 +198,32 @@ LOGGING_STREAM_CONFIG = {
 }
 
 
-def configure_logging() -> None:
+def configure_logging(level: Union[int, str] = "INFO") -> None:
+    """Configure logging module to use JSON formatter for logs."""
     logging.config.dictConfig(LOGGING_STREAM_CONFIG)
+    logging.captureWarnings(True)
+    logging.root.setLevel(level)
+
+
+# Just for developer convenience -- this avoids having too many imports of "logging" packages.
+def getLogger(name: str = None) -> logging.Logger:
+    return logging.getLogger(name)
+
+
+def set_output_format(pretty: bool = False, pretty_if_tty: bool = False) -> None:
+    if pretty or (pretty_if_tty and sys.stdout.isatty()):
+        JsonFormatter.output_format = "pretty"
+    else:
+        JsonFormatter.output_format = "compact"
+
+
+def update_from_lambda_context(context: Any) -> None:
+    """Update values in the logging context from the context of a AWS Lambda function."""
+    ContextFilter.update_from_lambda_context(context)
 
 
 def update_context(**kwargs: str) -> None:
+    """Update values in the logging context to be included with every log record."""
     ContextFilter.update_context(**kwargs)
 
 
@@ -180,24 +238,8 @@ class log_stack_trace(ContextDecorator):
 
     def __exit__(self, exc_type, exc_val, exc_tb):  # type: ignore
         if exc_type:
-            self._logger.error(
-                f"Exception: {exc_val!r}",
-                extra={"stack_trace": traceback.format_exception(exc_type, exc_val, exc_tb)},
-            )
+            tb = traceback.TracebackException(exc_type, exc_val, exc_tb)
+            message = next(tb.format_exception_only()).strip()
+            stack_trace_lines = ("".join(tb.format())).splitlines()
+            self._logger.error(message, extra={"stack_trace": stack_trace_lines})
         return None
-
-
-def main_test() -> None:
-    configure_logging()
-    logger = getLogger(__name__)
-    logger.addHandler(NullHandler())
-
-    update_context(aws_request_id="62E538E9-E9C5-415A-9771-6588F9A1A708")
-    logging.info("Message at INFO level", extra={"planet": "earth"})
-
-    num_count = 99
-    logger.info(f"Finished counting {num_count} balloons", extra={"balloons": num_count})
-
-
-if __name__ == "__main__":
-    main_test()
