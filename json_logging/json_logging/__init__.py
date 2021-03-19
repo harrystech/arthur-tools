@@ -151,8 +151,9 @@ class JsonFormatter(logging.Formatter):
         # (Go to https://www.epochconverter.com/ to convert the timestamp in milliseconds.)
         assembled["timestamp"] = int(record.created * 1000.0)
         assembled["gmtime"] = datetime.fromtimestamp(record.created, timezone.utc)
+        # Note that we show only the values of fields when specific fields were requested.
         if self.output_fields is not None:
-            assembled = {field: assembled[field] for field in self.output_fields}
+            assembled = [assembled[field] for field in self.output_fields]  # type: ignore
         return json.dumps(
             assembled,
             cls=DefaultJsonFormat,
