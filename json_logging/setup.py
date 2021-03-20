@@ -6,7 +6,7 @@ setup(
     license="MIT",
     name="json_logging",
     packages=["json_logging"],
-    python_requires=">=3.5",
+    python_requires=">=3.6",
     url="https://github.com/harrystech/arthur-tools",
-    version="1.1.0",
+    version="1.2.0",
 )

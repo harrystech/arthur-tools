@@ -77,4 +77,4 @@ ENV/
 
 # Mac stuff
 .DS_Store
-.idea
+.idea/

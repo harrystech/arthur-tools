@@ -1,7 +1,9 @@
-black==19.10b0
-flake8==3.8.3
+# For now, we sync them manually with pre-commit.
+black==20.8b1
+flake8==3.8.4
 flake8-docstrings==1.5.0
 flake8-fixme==1.1.1
-isort==5.3.2
-mypy==0.782
-mypy-boto3==1.14.43
+isort==5.7.0
+mypy==0.812
+# Locked to same version as runtime for AWS Lambda
+mypy-boto3==1.16.31
