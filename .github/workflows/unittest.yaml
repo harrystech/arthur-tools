@@ -6,7 +6,6 @@ on:
   push:
     paths:
     - ".github/workflows/unittest.yaml"
-    - "cloudwatch_logs/cw_logs_to_es/**"
     - "json_logging/**"
 
 jobs:
@@ -19,8 +18,8 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: 3.8
-    - name: Run unit tests
+    - name: Run unit tests (json_logging)
       run: |-
         cd json_logging/
-        python3 setup.py develop
+        python3 -m pip install .
         python3 -m unittest discover -v tests/
