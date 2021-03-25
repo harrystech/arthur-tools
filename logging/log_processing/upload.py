@@ -97,7 +97,8 @@ def lambda_handler(event, context):
         file_uri = f"s3://{bucket_name}/{object_key}"
         if not (
             (object_key.startswith("_logs/") or "/logs/" in object_key)
-            and object_key.endswith(("StdError.gz", "stderr.gz"))
+            and object_key.endswith(".gz")
+            and "stderr" in object_key.lower()
         ):
             event_logger.info(f"Object is not a log file: {file_uri}")
             continue

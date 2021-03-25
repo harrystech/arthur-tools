@@ -54,8 +54,10 @@ to bring up a ES domain along with a Lambda function to load log files.
 For example:
 ```bash
 ../bin/do_cloudformation.sh create dw_es_domain dev \
+    CodeS3Bucket="<your code bucket>" \
+    CodeS3Key="<your latest zip file>" \
     DomainName="dw-es-dev" \
-    CodeS3Bucket="<your code bucket>" CodeS3Key="<your latest zip file>" \
+    EnvName="dev" \
     NodeStorageSize=20 \
     WhitelistCIDR1=192.168.1.1/32
 ```
@@ -64,10 +66,17 @@ Replace the IP address with your actual office IP address.
 If you need to update the stack, e.g. to update the Lambda handler, modify this line appropriately:
 ```bash
 ../bin/do_cloudformation.sh update dw_es_domain dev \
+    CodeS3Bucket=UsePreviousValue \
+    CodeS3Key=UsePreviousValue \
     DomainName=UsePreviousValue \
-    CodeS3Bucket=UsePreviousValue CodeS3Key=UsePreviousValue \
+    ElasticsearchVersion=UsePreviousValue \
+    EnvName=UsePreviousValue \
+    InstanceType=UsePreviousValue \
+    NodeCount=UsePreviousValue \
     NodeStorageSize=UsePreviousValue \
     WhitelistCIDR1=UsePreviousValue
+    WhitelistCIDR2=UsePreviousValue \
+    WhitelistCIDR3=UsePreviousValue
 ```
 Remember that once you have set an optional parameter, you have to at least pass in that parameter
 with `=UserPreviousValue` or it reverts to its default.
