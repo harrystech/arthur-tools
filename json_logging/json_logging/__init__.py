@@ -224,7 +224,7 @@ def update_from_lambda_context(context: Any) -> None:
     ContextFilter.update_from_lambda_context(context)
 
 
-def update_context(**kwargs: str) -> None:
+def update_context(**kwargs: Optional[str]) -> None:
     """Update values in the logging context to be included with every log record."""
     ContextFilter.update_context(**kwargs)
 

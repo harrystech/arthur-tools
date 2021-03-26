@@ -53,7 +53,7 @@ git+https://github.com/harrystech/arthur-tools.git#subdirectory=json_logging&egg
 
 To use a specific version or the latest developer version, change this to:
 ```text
-git+https://github.com/harrystech/arthur-tools.git@next#subdirectory=json_logging&egg=json-logging
+git+https://github.com/harrystech/arthur-tools.git@branch_name#subdirectory=json_logging&egg=json-logging
 ```
 
 The syntax is described in the [documentation of `pip`](https://pip.pypa.io/en/stable/reference/pip_install/#vcs-support).
@@ -129,13 +129,13 @@ probably do so inside a Docker container or using a virtual environment.)
 cd json_logging
 python3 -m venv venv
 source venv/bin/activate
-python3 -m pip install --editable .
+python3 -m pip install 'git+https://github.com/harrystech/arthur-tools.git#subdirectory=json_logging&egg=json-logging'
 ```
 
 ### Running unit tests
 
 ```shell
-python3 -m pip install --upgrade --editable .
+python3 -m pip install --upgrade 'git+https://github.com/harrystech/arthur-tools.git#subdirectory=json_logging&egg=json-logging'
 
 python3 -m unittest discover tests
 ```
