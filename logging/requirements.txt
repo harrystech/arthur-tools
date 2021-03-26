@@ -4,10 +4,10 @@ botocore==1.20.5
 certifi==2020.12.5
 elasticsearch==7.11.0
 jmespath==0.10.0
-mypy-boto3==1.17.5.0
+mypy-boto3==1.17.38.0
 pycodestyle==2.6.0
 python-dateutil==2.8.1
 requests==2.25.1
 requests-aws4auth==1.0.1
-s3transfer==0.3.4
+s3transfer==0.3.6
 urllib3==1.26.3
