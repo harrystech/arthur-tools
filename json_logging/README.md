@@ -11,7 +11,8 @@ These are the default fields that are logged:
 Name | Example value | Notes
 ----|----|----
 `aws_request_id` | `799ab13f-6d11-4f0d-853f-bad9fcad86c3` | Request id when executing a function in AWS
-`elapsed_ms` | 24 | Elapsed time in milliseconds (since module was loaded)
+`correlation_id` | `80bd63b7-d91e-4b8c-b60b-3ad83606d144` | Optional id that allows us to pull mutiple requests together
+`elapsed_ms` | 24 | Elapsed time in milliseconds (since module was loaded, which is time of cold-start for AWS Lambda)
 `gmtime` | `2020-08-02T15:24:59.154Z` | Timestamp in RFC3339 format
 `log_level` | `INFO` | Log level as string
 `log_severity` | 20 | Log level as number which makes it easy to filter
@@ -128,7 +129,7 @@ probably do so inside a Docker container or using a virtual environment.)
 cd json_logging
 python3 -m venv venv
 source venv/bin/activate
-python3 -m pip install --upgrade 'git+https://github.com/harrystech/arthur-tools.git@next#subdirectory=json_logging&egg=json-logging'
+python3 -m pip install --editable .
 ```
 
 ### Running unit tests
