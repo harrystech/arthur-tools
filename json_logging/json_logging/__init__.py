@@ -25,6 +25,7 @@ class ContextFilter(logging.Filter):
 
     _context: Dict[str, Optional[str]] = {
         "aws_request_id": None,
+        "correlation_id": None,
         "function_name": None,
         "function_version": None,
         "invoked_function_arn": None,
@@ -47,11 +48,12 @@ class ContextFilter(logging.Filter):
             cls._context[field] = getattr(context, field, value)
 
     @classmethod
-    def update_context(cls, **kwargs: str) -> None:
+    def update_context(cls, **kwargs: Optional[str]) -> None:
         """
         Update any of the fields stored in the global context filter.
 
         Note that trying to set a field that's not been defined raises a ValueError.
+        Setting a field to None removes it from the output.
         """
         for field, value in kwargs.items():
             if field in cls._context:
