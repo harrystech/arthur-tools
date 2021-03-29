@@ -25,14 +25,16 @@ def main() -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--verbose", action="store_true")
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument("--pretty-print", action="store_true", dest="pretty")
-    group.add_argument("--compact", action="store_false", dest="pretty")
+    verbose_group = parser.add_mutually_exclusive_group()
+    verbose_group.add_argument("--verbose", action="store_true", dest="verbose")
+    verbose_group.add_argument("--terse", action="store_false", dest="verbose")
+    pretty_group = parser.add_mutually_exclusive_group()
+    pretty_group.add_argument("--pretty-print", action="store_true", dest="pretty")
+    pretty_group.add_argument("--compact", action="store_false", dest="pretty")
     args = parser.parse_args()
 
     json_logging.configure_logging("DEBUG" if args.verbose else "INFO")
-    json_logging.set_output_format(pretty=args.pretty)
+    json_logging.set_output_format(pretty=args.pretty, terse=not args.verbose)
     json_logging.update_context(request_id=uuid.uuid4().hex)
 
     main()
