@@ -6,4 +6,4 @@ flake8-fixme==1.1.1
 isort==5.8.0
 mypy==0.812
 # Locked to same version as runtime for AWS Lambda
-mypy-boto3==1.16.31
+mypy-boto3==1.28.16.post1
