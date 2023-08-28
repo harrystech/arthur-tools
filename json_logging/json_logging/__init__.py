@@ -12,7 +12,7 @@ import traceback
 from contextlib import ContextDecorator
 from datetime import datetime, timezone
 from logging import NullHandler  # noqa: F401
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 
 class ContextFilter(logging.Filter):
@@ -116,8 +116,9 @@ class JsonFormatter(logging.Formatter):
         "thread": None,
     }
 
-    # Use "set_output_format()" to change this value.
+    # Use "set_output_format()" to change these values.
     output_format = "compact"
+    output_fields: Optional[List[str]] = None
 
     @property
     def indent(self) -> Optional[str]:
@@ -150,6 +151,9 @@ class JsonFormatter(logging.Formatter):
         # (Go to https://www.epochconverter.com/ to convert the timestamp in milliseconds.)
         assembled["timestamp"] = int(record.created * 1000.0)
         assembled["gmtime"] = datetime.fromtimestamp(record.created, timezone.utc)
+        # Note that we show only the values of fields when specific fields were requested.
+        if self.output_fields is not None:
+            assembled = [assembled[field] for field in self.output_fields]  # type: ignore
         return json.dumps(
             assembled,
             cls=DefaultJsonFormat,
@@ -212,11 +216,17 @@ def getLogger(name: str = None) -> logging.Logger:
     return logging.getLogger(name)
 
 
-def set_output_format(pretty: bool = False, pretty_if_tty: bool = False) -> None:
+def set_output_format(
+    pretty: bool = False, pretty_if_tty: bool = False, terse: bool = False
+) -> None:
     if pretty or (pretty_if_tty and sys.stdout.isatty()):
         JsonFormatter.output_format = "pretty"
     else:
         JsonFormatter.output_format = "compact"
+    if terse:
+        JsonFormatter.output_fields = ["gmtime", "log_level", "message"]
+    else:
+        JsonFormatter.output_fields = None
 
 
 def update_from_lambda_context(context: Any) -> None:
@@ -224,7 +234,7 @@ def update_from_lambda_context(context: Any) -> None:
     ContextFilter.update_from_lambda_context(context)
 
 
-def update_context(**kwargs: str) -> None:
+def update_context(**kwargs: Optional[str]) -> None:
     """Update values in the logging context to be included with every log record."""
     ContextFilter.update_context(**kwargs)
 
